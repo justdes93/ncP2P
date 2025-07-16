@@ -1,0 +1,1294 @@
+{
+  "vulnerabilities": [
+    {
+      "id": "SNYK-JS-BRACEEXPANSION-9789073",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L/E:P",
+      "credit": [
+        "mmmsssttt404"
+      ],
+      "semver": {
+        "vulnerable": [
+          ">=1.0.0 <1.1.12",
+          ">=2.0.0 <2.0.2",
+          ">=3.0.0 <3.0.1",
+          ">=4.0.0 <4.0.1"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "1.1.12",
+        "2.0.2",
+        "3.0.1",
+        "4.0.1"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "low",
+      "cvssScore": 2.3,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "brace-expansion",
+      "references": [
+        {
+          "url": "https://github.com/advisories/GHSA-v6h2-p8h4-qcjw",
+          "title": "GitHub Advisory"
+        },
+        {
+          "url": "https://github.com/juliangruber/brace-expansion/commit/0b6a9781e18e9d2769bb2931f4856d1360243ed2",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://gist.github.com/mmmsssttt404/37a40ce7d6e5ca604858fe30814d9466",
+          "title": "GitHub Gist"
+        },
+        {
+          "url": "https://github.com/juliangruber/brace-expansion/pull/65",
+          "title": "GitHub PR"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "Red Hat",
+          "severity": "low",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L",
+          "cvssV3BaseScore": 3.1,
+          "modificationTime": "2025-06-19T05:30:43.149011Z"
+        },
+        {
+          "assigner": "NVD",
+          "severity": "low",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L",
+          "cvssV3BaseScore": 3.1,
+          "modificationTime": "2025-06-10T01:13:43.537639Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:L/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:P",
+          "assigner": "Snyk",
+          "severity": "low",
+          "baseScore": 2.3,
+          "cvssVersion": "4.0",
+          "modificationTime": "2025-06-16T08:51:48.041497Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L/E:P",
+          "assigner": "Snyk",
+          "severity": "low",
+          "baseScore": 3.1,
+          "cvssVersion": "3.1",
+          "modificationTime": "2025-06-16T08:51:48.041497Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L",
+          "assigner": "Red Hat",
+          "severity": "low",
+          "baseScore": 3.1,
+          "cvssVersion": "3.1",
+          "modificationTime": "2025-06-19T05:30:43.149011Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L",
+          "assigner": "NVD",
+          "severity": "low",
+          "baseScore": 3.1,
+          "cvssVersion": "3.1",
+          "modificationTime": "2025-06-10T01:13:43.537639Z"
+        }
+      ],
+      "description": "## Overview\n[brace-expansion](https://github.com/juliangruber/brace-expansion) is a Brace expansion as known from sh/bash\n\nAffected versions of this package are vulnerable to Regular Expression Denial of Service (ReDoS) in the `expand()` function, which is prone to catastrophic backtracking on very long malicious inputs.\n## PoC\n```js\r\nimport index from \"./index.js\";\r\n\r\nlet str = \"{a}\" + \",\".repeat(100000) + \"\\u0000\";\r\n\r\nlet startTime = performance.now();\r\n\r\nconst result = index(str);\r\n\r\nlet endTime = performance.now();\r\n\r\nlet timeTaken = endTime - startTime;\r\n\r\nconsole.log(`匹配耗时: ${timeTaken.toFixed(3)} 毫秒`);\r\n```\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its original and legitimate users. There are many types of DoS attacks, ranging from trying to clog the network pipes to the system by generating a large volume of traffic from many machines (a Distributed Denial of Service - DDoS - attack) to sending crafted requests that cause a system to crash or take a disproportional amount of time to process.\n\nThe Regular expression Denial of Service (ReDoS) is a type of Denial of Service attack. Regular expressions are incredibly powerful, but they aren't very intuitive and can ultimately end up making it easy for attackers to take your site down.\n\nLet’s take the following regular expression as an example:\n```js\nregex = /A(B|C+)+D/\n```\n\nThis regular expression accomplishes the following:\n- `A` The string must start with the letter 'A'\n- `(B|C+)+` The string must then follow the letter A with either the letter 'B' or some number of occurrences of the letter 'C' (the `+` matches one or more times). The `+` at the end of this section states that we can look for one or more matches of this section.\n- `D` Finally, we ensure this section of the string ends with a 'D'\n\nThe expression would match inputs such as `ABBD`, `ABCCCCD`, `ABCBCCCD` and `ACCCCCD`\n\nIt most cases, it doesn't take very long for a regex engine to find a match:\n\n```bash\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCD\")'\n0.04s user 0.01s system 95% cpu 0.052 total\n\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCX\")'\n1.79s user 0.02s system 99% cpu 1.812 total\n```\n\nThe entire process of testing it against a 30 characters long string takes around ~52ms. But when given an invalid string, it takes nearly two seconds to complete the test, over ten times as long as it took to test a valid string. The dramatic difference is due to the way regular expressions get evaluated.\n\nMost Regex engines will work very similarly (with minor differences). The engine will match the first possible way to accept the current character and proceed to the next one. If it then fails to match the next one, it will backtrack and see if there was another way to digest the previous character. If it goes too far down the rabbit hole only to find out the string doesn’t match in the end, and if many characters have multiple valid regex paths, the number of backtracking steps can become very large, resulting in what is known as _catastrophic backtracking_.\n\nLet's look at how our expression runs into this problem, using a shorter string: \"ACCCX\". While it seems fairly straightforward, there are still four different ways that the engine could match those three C's:\n1. CCC\n2. CC+C\n3. C+CC\n4. C+C+C.\n\nThe engine has to try each of those combinations to see if any of them potentially match against the expression. When you combine that with the other steps the engine must take, we can use [RegEx 101 debugger](https://regex101.com/debugger) to see the engine has to take a total of 38 steps before it can determine the string doesn't match.\n\nFrom there, the number of steps the engine must use to validate a string just continues to grow.\n\n| String | Number of C's | Number of steps |\n| -------|-------------:| -----:|\n| ACCCX | 3 | 38\n| ACCCCX | 4 | 71\n| ACCCCCX | 5 | 136\n| ACCCCCCCCCCCCCCX | 14 | 65,553\n\n\nBy the time the string includes 14 C's, the engine has to take over 65,000 steps just to see if the string is valid. These extreme situations can cause them to work very slowly (exponentially related to input size, as shown above), allowing an attacker to exploit this and can cause the service to excessively consume CPU, resulting in a Denial of Service.\n\n## Remediation\nUpgrade `brace-expansion` to version 1.1.12, 2.0.2, 3.0.1, 4.0.1 or higher.\n## References\n- [GitHub Advisory](https://github.com/advisories/GHSA-v6h2-p8h4-qcjw)\n- [GitHub Commit](https://github.com/juliangruber/brace-expansion/commit/0b6a9781e18e9d2769bb2931f4856d1360243ed2)\n- [GitHub Gist](https://gist.github.com/mmmsssttt404/37a40ce7d6e5ca604858fe30814d9466)\n- [GitHub PR](https://github.com/juliangruber/brace-expansion/pull/65)\n",
+      "epssDetails": {
+        "percentile": "0.19012",
+        "probability": "0.00060",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2025-5889"
+        ],
+        "CWE": [
+          "CWE-1333"
+        ],
+        "GHSA": [
+          "GHSA-v6h2-p8h4-qcjw"
+        ]
+      },
+      "packageName": "brace-expansion",
+      "proprietary": false,
+      "creationTime": "2025-04-22T10:41:28.859488Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2025-04-22T09:04:33Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2025-06-12T06:58:37.742572Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2025-06-19T05:30:43.149011Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "low",
+      "from": [
+        "layer@1.0.0",
+        "bcrypt@5.1.1",
+        "@mapbox/node-pre-gyp@1.0.11",
+        "rimraf@3.0.2",
+        "glob@7.2.3",
+        "minimatch@3.1.2",
+        "brace-expansion@1.1.11"
+      ],
+      "upgradePath": [
+        false,
+        "bcrypt@6.0.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "brace-expansion",
+      "version": "1.1.11"
+    },
+    {
+      "id": "SNYK-JS-INFLIGHT-6095116",
+      "title": "Missing Release of Resource after Effective Lifetime",
+      "CVSSv3": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+      "credit": [
+        "jkomyno"
+      ],
+      "semver": {
+        "vulnerable": [
+          "*"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "medium",
+      "cvssScore": 6.2,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "inflight",
+      "references": [
+        {
+          "url": "https://github.com/isaacs/inflight/issues/5",
+          "title": "GitHub Issue"
+        },
+        {
+          "url": "https://github.com/logdna/logdna-agent/pull/157",
+          "title": "GitHub PR"
+        }
+      ],
+      "cvssDetails": [],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+          "assigner": "Snyk",
+          "severity": "medium",
+          "baseScore": 6.2,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-13T12:24:01.140165Z"
+        }
+      ],
+      "description": "## Overview\n\nAffected versions of this package are vulnerable to Missing Release of Resource after Effective Lifetime via the `makeres` function due to improperly deleting keys from the `reqs` object after execution of callbacks. This behavior causes the keys to remain in the `reqs` object, which leads to resource exhaustion.\r\n\r\nExploiting this vulnerability results in crashing the `node` process or in the application crash.\r\n\r\n**Note:**\r\nThis library is not maintained, and currently, there is no fix for this issue. To overcome this vulnerability, several dependent packages have eliminated the use of this library.\r\n\r\nTo trigger the memory leak, an attacker would need to have the ability to execute or influence the asynchronous operations that use the inflight module within the application. This typically requires access to the internal workings of the server or application, which is not commonly exposed to remote users. Therefore, “Attack vector” is marked as “Local”.\n## PoC\n```js\r\nconst inflight = require('inflight');\r\n\r\nfunction testInflight() {\r\n  let i = 0;\r\n  function scheduleNext() {\r\n    let key = `key-${i++}`;\r\n    const callback = () => {\r\n    };\r\n    for (let j = 0; j < 1000000; j++) {\r\n      inflight(key, callback);\r\n    }\r\n\r\n    setImmediate(scheduleNext);\r\n  }\r\n\r\n\r\n  if (i % 100 === 0) {\r\n    console.log(process.memoryUsage());\r\n  }\r\n\r\n  scheduleNext();\r\n}\r\n\r\ntestInflight();\r\n```\n## Remediation\nThere is no fixed version for `inflight`.\n## References\n- [GitHub Issue](https://github.com/isaacs/inflight/issues/5)\n- [GitHub PR](https://github.com/logdna/logdna-agent/pull/157)\n",
+      "epssDetails": null,
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-772"
+        ]
+      },
+      "packageName": "inflight",
+      "proprietary": false,
+      "creationTime": "2023-11-30T12:51:43.483198Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2023-11-28T12:47:27Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2023-11-30T12:52:55.469185Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-03-13T12:24:01.140165Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "medium",
+      "from": [
+        "layer@1.0.0",
+        "bcrypt@5.1.1",
+        "@mapbox/node-pre-gyp@1.0.11",
+        "rimraf@3.0.2",
+        "glob@7.2.3",
+        "inflight@1.0.6"
+      ],
+      "upgradePath": [
+        false,
+        "bcrypt@6.0.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "inflight",
+      "version": "1.0.6"
+    },
+    {
+      "id": "SNYK-JS-MULTER-10185673",
+      "title": "Uncaught Exception",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+      "credit": [
+        "Max Mathieu"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<2.0.0"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "2.0.0"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "high",
+      "cvssScore": 8.7,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "multer",
+      "references": [
+        {
+          "url": "https://github.com/expressjs/multer/commit/2c8505f207d923dd8de13a9f93a4563e59933665",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/expressjs/multer/issues/1176",
+          "title": "GitHub Issue"
+        }
+      ],
+      "cvssDetails": [],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/E:P",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 8.7,
+          "cvssVersion": "4.0",
+          "modificationTime": "2025-05-20T14:50:49.594750Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2025-05-20T14:50:49.594750Z"
+        }
+      ],
+      "description": "## Overview\n\nAffected versions of this package are vulnerable to Uncaught Exception due to an `error` event thrown by `busboy`. An attacker can cause a full nodejs application to crash by sending a specially crafted multi-part upload request.\n## PoC\n```javascript\r\nconst express = require('express')\r\nconst multer  = require('multer')\r\nconst http  = require('http')\r\nconst upload = multer({ dest: 'uploads/' })\r\nconst port = 8888\r\n\r\nconst app = express()\r\n\r\napp.post('/upload', upload.single('file'), function (req, res) {\r\n  res.send({})\r\n})\r\n\r\napp.listen(port, () => {\r\n  console.log(`Listening on port ${port}`)\r\n\r\n  const boundary = 'AaB03x'\r\n  const body = [\r\n    '--' + boundary,\r\n    'Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"',\r\n    'Content-Type: text/plain',\r\n    '',\r\n    'test without end boundary'\r\n  ].join('\\r\\n')\r\n  const options = {\r\n    hostname: 'localhost',\r\n    port,\r\n    path: '/upload',\r\n    method: 'POST',\r\n    headers: {\r\n      'content-type': 'multipart/form-data; boundary=' + boundary,\r\n      'content-length': body.length,\r\n    }\r\n  }\r\n  const req = http.request(options, (res) => {\r\n    console.log(res.statusCode)\r\n  })\r\n  req.on('error', (err) => {\r\n    console.error(err)\r\n  })\r\n  req.write(body)\r\n  req.end()\r\n})\r\n```\n## Remediation\nUpgrade `multer` to version 2.0.0 or higher.\n## References\n- [GitHub Commit](https://github.com/expressjs/multer/commit/2c8505f207d923dd8de13a9f93a4563e59933665)\n- [GitHub Issue](https://github.com/expressjs/multer/issues/1176)\n",
+      "epssDetails": {
+        "percentile": "0.16874",
+        "probability": "0.00054",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2025-47944"
+        ],
+        "CWE": [
+          "CWE-248"
+        ],
+        "GHSA": [
+          "GHSA-4pg4-qvpc-4q3h"
+        ]
+      },
+      "packageName": "multer",
+      "proprietary": false,
+      "creationTime": "2025-05-20T06:59:06.612966Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2025-05-19T22:16:30Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2025-05-20T14:50:49.586509Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2025-05-20T14:50:49.594750Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "high",
+      "from": [
+        "layer@1.0.0",
+        "multer@1.4.5-lts.1"
+      ],
+      "upgradePath": [
+        false,
+        "multer@2.0.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "multer",
+      "version": "1.4.5-lts.1"
+    },
+    {
+      "id": "SNYK-JS-MULTER-10185675",
+      "title": "Missing Release of Memory after Effective Lifetime",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "credit": [
+        "UnlimitedBytes"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<2.0.0"
+        ]
+      },
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.0.0"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "high",
+      "cvssScore": 8.7,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "multer",
+      "references": [
+        {
+          "url": "https://github.com/expressjs/multer/commit/2c8505f207d923dd8de13a9f93a4563e59933665",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/expressjs/multer/pull/1120",
+          "title": "GitHub PR"
+        }
+      ],
+      "cvssDetails": [],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 8.7,
+          "cvssVersion": "4.0",
+          "modificationTime": "2025-05-20T13:48:08.461777Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2025-05-20T13:48:08.461777Z"
+        }
+      ],
+      "description": "## Overview\n\nAffected versions of this package are vulnerable to Missing Release of Memory after Effective Lifetime due to improper handling of error events in HTTP request streams, which fails to close the internal `busboy` stream. An attacker can cause a denial of service by repeatedly triggering errors in file upload streams, leading to resource exhaustion and memory leaks.\r\n\r\n**Note:**\r\n\r\nThis is only exploitable if the server is handling file uploads.\n## Remediation\nUpgrade `multer` to version 2.0.0 or higher.\n## References\n- [GitHub Commit](https://github.com/expressjs/multer/commit/2c8505f207d923dd8de13a9f93a4563e59933665)\n- [GitHub PR](https://github.com/expressjs/multer/pull/1120)\n",
+      "epssDetails": {
+        "percentile": "0.16874",
+        "probability": "0.00054",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2025-47935"
+        ],
+        "CWE": [
+          "CWE-401"
+        ],
+        "GHSA": [
+          "GHSA-44fp-w29j-9vj5"
+        ]
+      },
+      "packageName": "multer",
+      "proprietary": false,
+      "creationTime": "2025-05-20T07:17:52.523621Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2025-05-19T22:04:17Z",
+      "exploitDetails": {
+        "sources": [],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Not Defined",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Not Defined",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2025-05-20T13:48:08.453751Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2025-05-20T13:48:08.461777Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "high",
+      "from": [
+        "layer@1.0.0",
+        "multer@1.4.5-lts.1"
+      ],
+      "upgradePath": [
+        false,
+        "multer@2.0.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "multer",
+      "version": "1.4.5-lts.1"
+    },
+    {
+      "id": "SNYK-JS-MULTER-10299078",
+      "title": "Uncaught Exception",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:H",
+      "credit": [
+        "Davit Vardanyan"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<2.0.1"
+        ]
+      },
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.0.1"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "critical",
+      "cvssScore": 9.2,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "multer",
+      "references": [
+        {
+          "url": "https://github.com/expressjs/multer/commit/35a3272b611945155e046dd5cef11088587635e9",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/expressjs/multer/issues/1233",
+          "title": "GitHub Issue"
+        },
+        {
+          "url": "https://github.com/expressjs/multer/pull/1256",
+          "title": "GitHub PR"
+        }
+      ],
+      "cvssDetails": [],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:H",
+          "assigner": "Snyk",
+          "severity": "critical",
+          "baseScore": 9.2,
+          "cvssVersion": "4.0",
+          "modificationTime": "2025-06-04T14:52:32.637132Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:H",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 8.6,
+          "cvssVersion": "3.1",
+          "modificationTime": "2025-06-04T14:52:32.637132Z"
+        }
+      ],
+      "description": "## Overview\n\nAffected versions of this package are vulnerable to Uncaught Exception in `makeMiddleware`, when processing a file upload request. An attacker can cause the application to crash by sending a request with a field name containing an empty string.\n## Remediation\nUpgrade `multer` to version 2.0.1 or higher.\n## References\n- [GitHub Commit](https://github.com/expressjs/multer/commit/35a3272b611945155e046dd5cef11088587635e9)\n- [GitHub Issue](https://github.com/expressjs/multer/issues/1233)\n- [GitHub PR](https://github.com/expressjs/multer/pull/1256)\n",
+      "epssDetails": {
+        "percentile": "0.19140",
+        "probability": "0.00060",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2025-48997"
+        ],
+        "CWE": [
+          "CWE-248"
+        ],
+        "GHSA": [
+          "GHSA-g5hg-p3ph-g8qg"
+        ]
+      },
+      "packageName": "multer",
+      "proprietary": false,
+      "creationTime": "2025-06-04T07:00:55.886197Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2025-06-03T18:43:39Z",
+      "exploitDetails": {
+        "sources": [],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Not Defined",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Not Defined",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2025-06-04T14:52:32.618949Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2025-06-04T14:52:32.637132Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "critical",
+      "from": [
+        "layer@1.0.0",
+        "multer@1.4.5-lts.1"
+      ],
+      "upgradePath": [
+        false,
+        "multer@2.0.1"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "multer",
+      "version": "1.4.5-lts.1"
+    },
+    {
+      "id": "SNYK-JS-REQUEST-3361831",
+      "title": "Server-side Request Forgery (SSRF)",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+      "credit": [
+        "SzymonDrosdzol"
+      ],
+      "semver": {
+        "vulnerable": [
+          "*"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "medium",
+      "cvssScore": 6.5,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "request",
+      "references": [
+        {
+          "url": "https://github.com/request/request/commit/d42332182512e56ba68446f49c3e3711e04301a2",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/request/request/issues/3442",
+          "title": "GitHub Issue"
+        },
+        {
+          "url": "https://github.com/request/request/pull/3444",
+          "title": "GitHub PR"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "severity": "medium",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+          "cvssV3BaseScore": 6.1,
+          "modificationTime": "2024-03-11T09:53:01.764941Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+          "assigner": "Snyk",
+          "severity": "medium",
+          "baseScore": 6.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-06T14:09:12.150595Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+          "assigner": "NVD",
+          "severity": "medium",
+          "baseScore": 6.1,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:53:01.764941Z"
+        }
+      ],
+      "description": "## Overview\n[request](https://www.npmjs.com/package/request) is a simplified http request client.\n\nAffected versions of this package are vulnerable to Server-side Request Forgery (SSRF) due to insufficient checks in the `lib/redirect.js` file by allowing insecure redirects in the default configuration, via an attacker-controller server that does a cross-protocol redirect (HTTP to HTTPS, or HTTPS to HTTP).\r\n\r\n**NOTE:** `request` package has been deprecated, so a fix is not expected. See https://github.com/request/request/issues/3142.\n## Remediation\nA fix was pushed into the `master` branch but not yet published.\n## References\n- [GitHub Commit](https://github.com/request/request/commit/d42332182512e56ba68446f49c3e3711e04301a2)\n- [GitHub Issue](https://github.com/request/request/issues/3442)\n- [GitHub PR](https://github.com/request/request/pull/3444)\n",
+      "epssDetails": {
+        "percentile": "0.68646",
+        "probability": "0.00605",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2023-28155"
+        ],
+        "CWE": [
+          "CWE-918"
+        ]
+      },
+      "packageName": "request",
+      "proprietary": false,
+      "creationTime": "2023-03-16T13:58:23.124636Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2023-03-16T13:49:16Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2023-03-17T07:46:44.219769Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-03-11T09:53:01.764941Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "medium",
+      "from": [
+        "layer@1.0.0",
+        "request@2.88.2"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "request",
+      "version": "2.88.2"
+    },
+    {
+      "id": "SNYK-JS-TOUGHCOOKIE-5672873",
+      "title": "Prototype Pollution",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+      "credit": [
+        "Kokorin Vsevolod"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<4.1.3"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "4.1.3"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "medium",
+      "cvssScore": 6.5,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "tough-cookie",
+      "references": [
+        {
+          "url": "https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/salesforce/tough-cookie/issues/282",
+          "title": "GitHub Issue"
+        },
+        {
+          "url": "https://github.com/salesforce/tough-cookie/releases/tag/v4.1.3",
+          "title": "GitHub Release"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "severity": "critical",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+          "cvssV3BaseScore": 9.8,
+          "modificationTime": "2024-03-11T09:53:23.316011Z"
+        },
+        {
+          "assigner": "Red Hat",
+          "severity": "medium",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+          "cvssV3BaseScore": 6.5,
+          "modificationTime": "2024-03-11T09:54:01.611132Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+          "assigner": "Snyk",
+          "severity": "medium",
+          "baseScore": 6.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-06T14:05:21.140019Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+          "assigner": "NVD",
+          "severity": "critical",
+          "baseScore": 9.8,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:53:23.316011Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+          "assigner": "Red Hat",
+          "severity": "medium",
+          "baseScore": 6.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:54:01.611132Z"
+        }
+      ],
+      "description": "## Overview\n[tough-cookie](https://www.npmjs.com/package/tough-cookie) is a RFC6265 Cookies and CookieJar module for Node.js.\n\nAffected versions of this package are vulnerable to Prototype Pollution due to improper handling of Cookies when using CookieJar in `rejectPublicSuffixes=false` mode. Due to an issue with the manner in which the objects are initialized, an attacker can expose or modify a limited amount of property information on those objects. There is no impact to availability.\n## PoC\n```\r\n// PoC.js\r\nasync function main(){\r\nvar tough = require(\"tough-cookie\");\r\nvar cookiejar = new tough.CookieJar(undefined,{rejectPublicSuffixes:false});\r\n// Exploit cookie\r\nawait cookiejar.setCookie(\r\n  \"Slonser=polluted; Domain=__proto__; Path=/notauth\",\r\n  \"https://__proto__/admin\"\r\n);\r\n// normal cookie\r\nvar cookie = await cookiejar.setCookie(\r\n  \"Auth=Lol; Domain=google.com; Path=/notauth\",\r\n  \"https://google.com/\"\r\n);\r\n\r\n//Exploit cookie\r\nvar a = {};\r\nconsole.log(a[\"/notauth\"][\"Slonser\"])\r\n}\r\nmain();\r\n```\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Oliver. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nUpgrade `tough-cookie` to version 4.1.3 or higher.\n## References\n- [GitHub Commit](https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e)\n- [GitHub Issue](https://github.com/salesforce/tough-cookie/issues/282)\n- [GitHub Release](https://github.com/salesforce/tough-cookie/releases/tag/v4.1.3)\n",
+      "epssDetails": {
+        "percentile": "0.89421",
+        "probability": "0.05191",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2023-26136"
+        ],
+        "CWE": [
+          "CWE-1321"
+        ]
+      },
+      "packageName": "tough-cookie",
+      "proprietary": true,
+      "creationTime": "2023-06-08T15:08:51.664280Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2023-06-08T14:45:59Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2023-06-30T11:54:16.657348Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-03-11T09:54:01.611132Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "medium",
+      "from": [
+        "layer@1.0.0",
+        "request@2.88.2",
+        "tough-cookie@2.5.0"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "tough-cookie",
+      "version": "2.5.0"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 245,
+  "org": "justdes93",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.25.1\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {
+      "AGPL-1.0": {
+        "licenseType": "AGPL-1.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "AGPL-3.0": {
+        "licenseType": "AGPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "Artistic-1.0": {
+        "licenseType": "Artistic-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "Artistic-2.0": {
+        "licenseType": "Artistic-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CDDL-1.0": {
+        "licenseType": "CDDL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CPOL-1.02": {
+        "licenseType": "CPOL-1.02",
+        "severity": "high",
+        "instructions": ""
+      },
+      "EPL-1.0": {
+        "licenseType": "EPL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "GPL-2.0": {
+        "licenseType": "GPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "GPL-3.0": {
+        "licenseType": "GPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "LGPL-2.0": {
+        "licenseType": "LGPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-2.1": {
+        "licenseType": "LGPL-2.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-3.0": {
+        "licenseType": "LGPL-3.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-1.1": {
+        "licenseType": "MPL-1.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-2.0": {
+        "licenseType": "MPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MS-RL": {
+        "licenseType": "MS-RL",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "SimPL-2.0": {
+        "licenseType": "SimPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      }
+    }
+  },
+  "packageManager": "npm",
+  "ignoreSettings": {
+    "adminOnly": false,
+    "reasonRequired": false,
+    "disregardFilesystemIgnores": false
+  },
+  "summary": "7 vulnerable dependency paths",
+  "remediation": {
+    "unresolved": [
+      {
+        "id": "SNYK-JS-REQUEST-3361831",
+        "title": "Server-side Request Forgery (SSRF)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+        "credit": [
+          "SzymonDrosdzol"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.5,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "request",
+        "references": [
+          {
+            "url": "https://github.com/request/request/commit/d42332182512e56ba68446f49c3e3711e04301a2",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/request/request/issues/3442",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://github.com/request/request/pull/3444",
+            "title": "GitHub PR"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+            "cvssV3BaseScore": 6.1,
+            "modificationTime": "2024-03-11T09:53:01.764941Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T14:09:12.150595Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+            "assigner": "NVD",
+            "severity": "medium",
+            "baseScore": 6.1,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:01.764941Z"
+          }
+        ],
+        "description": "## Overview\n[request](https://www.npmjs.com/package/request) is a simplified http request client.\n\nAffected versions of this package are vulnerable to Server-side Request Forgery (SSRF) due to insufficient checks in the `lib/redirect.js` file by allowing insecure redirects in the default configuration, via an attacker-controller server that does a cross-protocol redirect (HTTP to HTTPS, or HTTPS to HTTP).\r\n\r\n**NOTE:** `request` package has been deprecated, so a fix is not expected. See https://github.com/request/request/issues/3142.\n## Remediation\nA fix was pushed into the `master` branch but not yet published.\n## References\n- [GitHub Commit](https://github.com/request/request/commit/d42332182512e56ba68446f49c3e3711e04301a2)\n- [GitHub Issue](https://github.com/request/request/issues/3442)\n- [GitHub PR](https://github.com/request/request/pull/3444)\n",
+        "epssDetails": {
+          "percentile": "0.68646",
+          "probability": "0.00605",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-28155"
+          ],
+          "CWE": [
+            "CWE-918"
+          ]
+        },
+        "packageName": "request",
+        "proprietary": false,
+        "creationTime": "2023-03-16T13:58:23.124636Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-03-16T13:49:16Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-03-17T07:46:44.219769Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:53:01.764941Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "layer@1.0.0",
+          "request@2.88.2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "request",
+        "version": "2.88.2",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-TOUGHCOOKIE-5672873",
+        "title": "Prototype Pollution",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+        "credit": [
+          "Kokorin Vsevolod"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<4.1.3"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "4.1.3"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.5,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "tough-cookie",
+        "references": [
+          {
+            "url": "https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/salesforce/tough-cookie/issues/282",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://github.com/salesforce/tough-cookie/releases/tag/v4.1.3",
+            "title": "GitHub Release"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "cvssV3BaseScore": 9.8,
+            "modificationTime": "2024-03-11T09:53:23.316011Z"
+          },
+          {
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+            "cvssV3BaseScore": 6.5,
+            "modificationTime": "2024-03-11T09:54:01.611132Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T14:05:21.140019Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:23.316011Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:54:01.611132Z"
+          }
+        ],
+        "description": "## Overview\n[tough-cookie](https://www.npmjs.com/package/tough-cookie) is a RFC6265 Cookies and CookieJar module for Node.js.\n\nAffected versions of this package are vulnerable to Prototype Pollution due to improper handling of Cookies when using CookieJar in `rejectPublicSuffixes=false` mode. Due to an issue with the manner in which the objects are initialized, an attacker can expose or modify a limited amount of property information on those objects. There is no impact to availability.\n## PoC\n```\r\n// PoC.js\r\nasync function main(){\r\nvar tough = require(\"tough-cookie\");\r\nvar cookiejar = new tough.CookieJar(undefined,{rejectPublicSuffixes:false});\r\n// Exploit cookie\r\nawait cookiejar.setCookie(\r\n  \"Slonser=polluted; Domain=__proto__; Path=/notauth\",\r\n  \"https://__proto__/admin\"\r\n);\r\n// normal cookie\r\nvar cookie = await cookiejar.setCookie(\r\n  \"Auth=Lol; Domain=google.com; Path=/notauth\",\r\n  \"https://google.com/\"\r\n);\r\n\r\n//Exploit cookie\r\nvar a = {};\r\nconsole.log(a[\"/notauth\"][\"Slonser\"])\r\n}\r\nmain();\r\n```\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Oliver. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nUpgrade `tough-cookie` to version 4.1.3 or higher.\n## References\n- [GitHub Commit](https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e)\n- [GitHub Issue](https://github.com/salesforce/tough-cookie/issues/282)\n- [GitHub Release](https://github.com/salesforce/tough-cookie/releases/tag/v4.1.3)\n",
+        "epssDetails": {
+          "percentile": "0.89421",
+          "probability": "0.05191",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-26136"
+          ],
+          "CWE": [
+            "CWE-1321"
+          ]
+        },
+        "packageName": "tough-cookie",
+        "proprietary": true,
+        "creationTime": "2023-06-08T15:08:51.664280Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-06-08T14:45:59Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-06-30T11:54:16.657348Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:54:01.611132Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "layer@1.0.0",
+          "request@2.88.2",
+          "tough-cookie@2.5.0"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "tough-cookie",
+        "version": "2.5.0",
+        "severityWithCritical": "medium"
+      }
+    ],
+    "upgrade": {
+      "bcrypt@5.1.1": {
+        "upgradeTo": "bcrypt@6.0.0",
+        "upgrades": [
+          "brace-expansion@1.1.11",
+          "inflight@1.0.6"
+        ],
+        "vulns": [
+          "SNYK-JS-BRACEEXPANSION-9789073",
+          "SNYK-JS-INFLIGHT-6095116"
+        ]
+      },
+      "multer@1.4.5-lts.1": {
+        "upgradeTo": "multer@2.0.1",
+        "upgrades": [
+          "multer@1.4.5-lts.1",
+          "multer@1.4.5-lts.1",
+          "multer@1.4.5-lts.1"
+        ],
+        "vulns": [
+          "SNYK-JS-MULTER-10299078",
+          "SNYK-JS-MULTER-10185673",
+          "SNYK-JS-MULTER-10185675"
+        ]
+      }
+    },
+    "patch": {},
+    "ignore": {},
+    "pin": {}
+  },
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 7,
+  "projectName": "layer",
+  "foundProjectCount": 1,
+  "displayTargetFile": "package-lock.json",
+  "hasUnknownVersions": false,
+  "path": "D:\\ncP2P-2"
+}
