@@ -29,7 +29,7 @@ router.post('/create', access, partnerAccess, Validate.create, Serialise.create,
             throw Exception.notFind 
         }
 
-        console.log('|||--- Invoice create', invoice)
+        // console.log('|||--- Invoice create', invoice)
 
         const hash = Jwt.generateLinkJwt(invoice._id)
         
