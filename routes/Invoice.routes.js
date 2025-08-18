@@ -21,12 +21,16 @@ const router = Router()
 //
 router.post('/create', access, partnerAccess, Validate.create, Serialise.create, 
     Interceptor(async (req, res) => {
+        console.log('|||--- Invoice create', req.body)
+
         const invoice = await Invoice.create(req.body)
         if(invoice?.errorTitle == "notFind") { 
             if(req.logs) { req.logs.payload = invoice.payload }
             throw Exception.notFind 
         }
-        
+
+        console.log('|||--- Invoice create', invoice)
+
         const hash = Jwt.generateLinkJwt(invoice._id)
         
         let payPageUrl = config.get('payPageUrl')
