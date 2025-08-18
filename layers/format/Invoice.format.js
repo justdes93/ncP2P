@@ -1,3 +1,5 @@
+const Const = require('@core/Const')
+
 
 const parnter = (invoice) => ({
     id: invoice._id,
@@ -47,6 +49,10 @@ const client = (invoice) => ({
 
     status: invoice.status,
     card: invoice.card,
+
+    redirectBack: invoice.redirectBack,
+    redirectReject: invoice.redirectReject,
+    redirectConfirm: invoice.redirectConfirm,
 
     createdAt: invoice.createdAt,
 })

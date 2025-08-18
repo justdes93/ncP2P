@@ -32,6 +32,10 @@ const schema = new Schema({
     kvitFile: { type: String, default: null },
     payLink: { type: String, default: null },
 
+    redirectBack: { type: String, default: null }, 
+    redirectReject: { type: String, default: null },
+    redirectConfirm: { type: String, default: null },
+
     createdAt: { type: Number },
     updatedAt: { type: Number }
 }, {

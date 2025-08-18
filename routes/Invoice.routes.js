@@ -31,6 +31,7 @@ router.post('/create', access, partnerAccess, Validate.create, Serialise.create,
         
         let payPageUrl = config.get('payPageUrl')
         if(req.body?.template === 'template_p_1') { payPageUrl = config.get('payPageUrl_tmp_1') }
+        if(req.body?.template === 'template_p_2') { payPageUrl = config.get('payPageUrl_tmp_2') }
 
         Task.push({ timestamp: Date.now() + Const.expire * 60 * 1000, type: 'CLOSE', payload: { invoice: invoice._id }})
 

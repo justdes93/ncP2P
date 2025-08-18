@@ -64,7 +64,7 @@ async function setSubstatus(invoice) {
 
 // ---------- MAIN ----------
 
-async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn }) {      
+async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm }) {      
     const isExist = refId && !!(await Invoice.findOne({ refId })) 
     if(isExist) { throw Exception.isExist }
 
@@ -108,7 +108,11 @@ async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRis
         card: payment.card,
         conv, confirm,
         ncpayConv,
-        isRisk
+        isRisk,
+
+        redirectBack, 
+        redirectReject, 
+        redirectConfirm
     })     
 
     const hash = Jwt.generateLinkJwt(invoice._id)
