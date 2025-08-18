@@ -112,9 +112,9 @@ async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRis
         ncpayConv,
         isRisk,
 
-        // redirectBack, 
-        // redirectReject, 
-        // redirectConfirm
+        redirectBack, 
+        redirectReject, 
+        redirectConfirm
     })     
 
     const hash = Jwt.generateLinkJwt(invoice._id)
