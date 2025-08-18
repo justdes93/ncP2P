@@ -14,10 +14,10 @@ const create = (req, _, next) => {
         isRisk: req.body.isRisk || false,
         isBn: req.body.isBn || false,
         template: req.body.template || null, 
-        
-        redirectBack: req.body.redirectBack || null,
-        redirectReject: req.body.redirectReject || null,
-        redirectConfirm: req.body.redirectConfirm || null
+
+        // redirectBack: req.body.redirectBack || null,
+        // redirectReject: req.body.redirectReject || null,
+        // redirectConfirm: req.body.redirectConfirm || null
     }
 
     next()

@@ -21,21 +21,26 @@ const router = Router()
 //
 router.post('/create', access, partnerAccess, Validate.create, Serialise.create, 
     Interceptor(async (req, res) => {
-        const invoice = await Invoice.create(req.body)
-        if(invoice?.errorTitle == "notFind") { 
-            if(req.logs) { req.logs.payload = invoice.payload }
-            throw Exception.notFind 
+        try {
+             const invoice = await Invoice.create(req.body)
+            if(invoice?.errorTitle == "notFind") { 
+                if(req.logs) { req.logs.payload = invoice.payload }
+                throw Exception.notFind 
+            }
+            
+            const hash = Jwt.generateLinkJwt(invoice._id)
+            
+            let payPageUrl = config.get('payPageUrl')
+            if(req.body?.template === 'template_p_1') { payPageUrl = config.get('payPageUrl_tmp_1') }
+            // if(req.body?.template === 'template_p_2') { payPageUrl = config.get('payPageUrl_tmp_2') }
+
+            Task.push({ timestamp: Date.now() + Const.expire * 60 * 1000, type: 'CLOSE', payload: { invoice: invoice._id }})
+
+            res.status(201).json({...Format.parnter(invoice), link: `${payPageUrl}?hash=${hash}`})
         }
-        
-        const hash = Jwt.generateLinkJwt(invoice._id)
-        
-        let payPageUrl = config.get('payPageUrl')
-        if(req.body?.template === 'template_p_1') { payPageUrl = config.get('payPageUrl_tmp_1') }
-        if(req.body?.template === 'template_p_2') { payPageUrl = config.get('payPageUrl_tmp_2') }
-
-        Task.push({ timestamp: Date.now() + Const.expire * 60 * 1000, type: 'CLOSE', payload: { invoice: invoice._id }})
-
-        res.status(201).json({...Format.parnter(invoice), link: `${payPageUrl}?hash=${hash}`})
+        catch(err) {
+            console.log("|||-------", err)
+        }
     })
 )
 
