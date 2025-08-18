@@ -12,9 +12,9 @@ const create = [
     check('isRisk', 'invalidValue').notEmpty(),
     check('isBn', 'invalidValue').notEmpty(),
 
-    check('redirectBack', 'incorectUrl').optional().isURL(),
-    check('redirectReject', 'incorectUrl').optional().isURL(),
-    check('redirectConfirm', 'incorectUrl').optional().isURL(),
+    // check('redirectBack', 'incorectUrl').optional().isURL(),
+    // check('redirectReject', 'incorectUrl').optional().isURL(),
+    // check('redirectConfirm', 'incorectUrl').optional().isURL(),
 ]
 
 const pay = [
