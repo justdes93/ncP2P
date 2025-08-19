@@ -36,7 +36,7 @@ router.post('/create', access, partnerAccess, Validate.create, Serialise.create,
         let payPageUrl = config.get('payPageUrl')
         try {
             if(req.body?.template === 'template_p_1') { payPageUrl = config.get('payPageUrl_tmp_1') }
-            if(req.body?.template === 'template_p_2') { payPageUrl = config.get('payPageUrl_tmp_2') }
+            if(req.body?.template === 'template_c1') { payPageUrl = config.get('payPageUrl_tmp_2') }
         }
         catch(err) {
             console.error('Error in template selection:', err)

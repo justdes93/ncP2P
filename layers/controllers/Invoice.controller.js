@@ -64,7 +64,7 @@ async function setSubstatus(invoice) {
 
 // ---------- MAIN ----------
 
-async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack=null, redirectReject=null, redirectConfirm=null }) {      
+async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm }) {      
     console.log("test------------------------------")
     
     const isExist = refId && !!(await Invoice.findOne({ refId })) 
