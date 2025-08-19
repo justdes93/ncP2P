@@ -50,9 +50,9 @@ const client = (invoice) => ({
     status: invoice.status,
     card: invoice.card,
 
-    // redirectBack: invoice.redirectBack || null,
-    // redirectReject: invoice.redirectReject || null,
-    // redirectConfirm: invoice.redirectConfirm || null,
+    redirectBack: invoice.redirectBack || null,
+    redirectReject: invoice.redirectReject || null,
+    redirectConfirm: invoice.redirectConfirm || null,
 
     createdAt: invoice.createdAt,
 })
