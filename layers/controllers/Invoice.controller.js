@@ -469,5 +469,6 @@ module.exports = {
     getStatistics,
 
     get,
-    list
+    list,
+    save
 }
