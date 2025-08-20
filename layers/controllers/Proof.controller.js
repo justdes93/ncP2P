@@ -79,6 +79,11 @@ async function createByNumber(invoiceId, kvitNumber) {
         kvitFile: ''
     })
 
+    if(invoice.status === Const.invoice.statusList.WAIT) {
+        invoice.status = Const.invoice.statusList.VALID
+        await Invoice.save(invoice)
+    }
+
     await save(proof)
 
     verify(proof._id).then() 
@@ -141,7 +146,12 @@ async function createByFile(invoiceId, kvitFile='') {
         fileLink
     })
 
-    await save(proof)   
+    await save(proof) 
+
+    if(invoice.status === Const.invoice.statusList.WAIT) {
+        invoice.status = Const.invoice.statusList.VALID
+        await Invoice.save(invoice)
+    }
 
     verify(proof._id).then() 
     gpt(proof._id).then()
