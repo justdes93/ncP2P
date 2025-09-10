@@ -6,6 +6,7 @@ const cors = require('cors')
 const path = require('path')
 const logger = require('@middleware/logger.middleware')
 const Task = require('@controllers/Task.controller')
+const Payment = require('@models/Payment.model')
 const NcApi = require('@utils/NcApi')
 const fs = require('fs')
 
@@ -49,8 +50,31 @@ process.on('unhandledRejection', (reason, promise) => {
     }
 })
 
+async function ensurePaymentsValidator() {
+  const db = mongoose.connection.db
+  const coll = Payment.collection.name 
+
+  try {
+    await db.command({collMod: coll, validator: { $expr: { $gte: ["$currentAmount", 0] } }, validationLevel: "strict" })
+    console.log('[payments] validator ensured')
+  } 
+  catch (e) {
+    const nsNotFound = e?.code === 26 || e?.codeName === 'NamespaceNotFound'
+    if(nsNotFound) {
+      await db.createCollection(coll)
+      await db.command({ collMod: coll, validator: { $expr: { $gte: ["$currentAmount", 0] } }, validationLevel: "strict" })
+      console.log(`[${coll}] collection created + validator attached`)
+    } 
+    else {
+      console.warn(`[${coll}] validator ensure failed:`, e.message)
+    }
+  }
+}
+
 async function start() {
-    await mongoose.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+    await mongoose.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, autoIndex: false  })
+    await Payment.syncIndexes()
+    await ensurePaymentsValidator()
 
     Task.query().then()
     NcApi.makeSubscribe()

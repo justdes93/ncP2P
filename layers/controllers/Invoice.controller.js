@@ -1,5 +1,6 @@
 const { moreAmount, sendMessage } = require('@utils/telegram.utils')
 const NcPay = require('@utils/NcPay')
+const mongoose = require('mongoose')
 
 const Invoice = require('@models/Invoice.model')
 const Payment = require('@controllers/Payment.controller')
@@ -64,69 +65,155 @@ async function setSubstatus(invoice) {
 
 // ---------- MAIN ----------
 
-async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm }) {      
-    console.log("test------------------------------")
+// async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm }) {          
+//     const isExist = refId && !!(await Invoice.findOne({ refId })) 
+//     if(isExist) { throw Exception.isExist }
+
+//     // const activeInvoice = await Invoice.findOne({ client, status: Const.invoice.activeStatusList, validOk: false })
+//     const activeInvoices = await Invoice.find({ client, status: Const.invoice.activeStatusList, validOk: false })
+//     const activeCount = activeInvoices.length
+
+//     const blockInvoice = await Invoice.findOne({ client, isScam: true })
+//     const isClientWait = client && ((!ncpayConv?.trust && activeCount > 0) || (ncpayConv?.trust && activeCount > 2))
+//     const isClientBlock = client && !!(blockInvoice) 
+
+//     const testClients = ['test_client', '794_6311f3e40c3283cdb1d36a70', '881_680a4766a46c55d20a1decf9']
+//     if(isClientBlock && !testClients.includes(client)) { throw Exception.clientIsBlocked }    
+//     if(isClientWait && !testClients.includes(client)) { throw Exception.clientHasActive }    
+
+//     const { conv, confirm } = await getConv(client)
     
-    const isExist = refId && !!(await Invoice.findOne({ refId })) 
-    if(isExist) { throw Exception.isExist }
+//     let payment = null
+//     //if(Math.random() > Const.invoice.ncPayRandom) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }) }
+//     if(isBn) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }) }
+//     if(!payment) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.DEFAULT, conv, confirm }) }
+//     if(!payment) { 
+//         const data = await Payment.getList({ status: Const.payment.statusList.ACTIVE })
+//         const activePayments = data.list
 
-    // const activeInvoice = await Invoice.findOne({ client, status: Const.invoice.activeStatusList, validOk: false })
-    const activeInvoices = await Invoice.find({ client, status: Const.invoice.activeStatusList, validOk: false })
-    const activeCount = activeInvoices.length
+//         return {
+//             errorTitle: "notFind",
+//             payload: activePayments.map(({_id, card, status, minLimit, maxLimit, current}) => ({ _id, card, status, minLimit, maxLimit, current }))
+//         }
+//     }
 
-    const blockInvoice = await Invoice.findOne({ client, isScam: true })
-    const isClientWait = client && ((!ncpayConv?.trust && activeCount > 0) || (ncpayConv?.trust && activeCount > 2))
-    const isClientBlock = client && !!(blockInvoice) 
+//     const invoice = new Invoice({ 
+//         paymentAccessId: payment.accessId,
+//         refId, partnerId,
+//         initialAmount: amount,
+//         amount, 
+//         bank, client,
+//         payment: payment._id,
+//         paymentRefId: payment.refId,
+//         paymentPartnerId: payment.partnerId,
+//         card: payment.card,
+//         conv, confirm,
+//         ncpayConv,
+//         isRisk,
 
-    const testClients = ['test_client', '794_6311f3e40c3283cdb1d36a70', '881_680a4766a46c55d20a1decf9']
-    if(isClientBlock && !testClients.includes(client)) { throw Exception.clientIsBlocked }    
-    if(isClientWait && !testClients.includes(client)) { throw Exception.clientHasActive }    
+//         redirectBack, 
+//         redirectReject, 
+//         redirectConfirm
+//     })     
 
-    const { conv, confirm } = await getConv(client)
-    
-    let payment = null
-    //if(Math.random() > Const.invoice.ncPayRandom) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }) }
-    if(isBn) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }) }
-    if(!payment) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.DEFAULT, conv, confirm }) }
-    if(!payment) { 
-        const data = await Payment.getList({ status: Const.payment.statusList.ACTIVE })
-        const activePayments = data.list
+//     const hash = Jwt.generateLinkJwt(invoice._id)
+//     const payPageUrl = config.get('payPageUrl')
 
-        return {
-            errorTitle: "notFind",
-            payload: activePayments.map(({_id, card, status, minLimit, maxLimit, current}) => ({ _id, card, status, minLimit, maxLimit, current }))
-        }
-    }
+//     invoice.payLink = `${payPageUrl}?hash=${hash}`
 
-    const invoice = new Invoice({ 
-        paymentAccessId: payment.accessId,
-        refId, partnerId,
-        initialAmount: amount,
-        amount, 
-        bank, client,
-        payment: payment._id,
-        paymentRefId: payment.refId,
-        paymentPartnerId: payment.partnerId,
-        card: payment.card,
-        conv, confirm,
-        ncpayConv,
-        isRisk,
-
-        redirectBack, 
-        redirectReject, 
-        redirectConfirm
-    })     
-
-    const hash = Jwt.generateLinkJwt(invoice._id)
-    const payPageUrl = config.get('payPageUrl')
-
-    invoice.payLink = `${payPageUrl}?hash=${hash}`
-
-    await save(invoice)
-    await Payment.refresh(payment._id)
+//     await save(invoice)
+//     await Payment.refresh(payment._id)
      
-    return invoice
+//     return invoice
+// }
+
+
+async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm}) {
+    const session = await mongoose.startSession()
+    let createdInvoiceId = null
+    let paymentId = null
+
+    try {        
+        await session.withTransaction(async () => {
+            const isExist = refId && !!(await Invoice.findOne({ refId }).session(session))
+            if(isExist) { throw Exception.isExist }
+
+            // const activeInvoice = await Invoice.findOne({ client, status: Const.invoice.activeStatusList, validOk: false }).session(session)
+            const activeInvoices = await Invoice.find({ client, status: Const.invoice.activeStatusList, validOk: false }).session(session)
+            const activeCount = activeInvoices.length
+
+            const blockInvoice = await Invoice.findOne({ client, isScam: true }).session(session)
+            const isClientWait = client && ((!ncpayConv?.trust && activeCount > 0) || (ncpayConv?.trust && activeCount > 2))
+            const isClientBlock = client && !!(blockInvoice) 
+
+            const testClients = ['test_client', '794_6311f3e40c3283cdb1d36a70', '881_680a4766a46c55d20a1decf9']
+            if(isClientBlock && !testClients.includes(client)) { throw Exception.clientIsBlocked }    
+            if(isClientWait && !testClients.includes(client)) { throw Exception.clientHasActive }    
+
+
+            const { conv, confirm } = await getConv(client)
+            console.log(conv, confirm)            
+
+            let paymentDoc = null
+            //if(Math.random() > Const.invoice.ncPayRandom) { paymentDoc = await Payment.reserveBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }, session) }
+            if(isBn) { paymentDoc = await Payment.reserveBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }, session) }
+            if(!paymentDoc) { paymentDoc = await Payment.reserveBest(amount, { type: Const.payment.filter.types.DEFAULT, conv, confirm }, session) }
+            if(!paymentDoc) { throw { notFind: true } }  
+
+            paymentId = paymentDoc._id
+            
+
+            const invoice = new Invoice({
+                paymentAccessId: paymentDoc.accessId,
+                refId, partnerId,
+                availableAmount: paymentDoc.currentAmount,
+                initialAmount: amount,
+                amount,
+                bank, client,
+                payment: paymentDoc._id,
+                paymentRefId: paymentDoc.refId,
+                paymentPartnerId: paymentDoc.partnerId,
+                card: paymentDoc.card,
+                conv, confirm,
+                ncpayConv, 
+                isRisk,
+                
+                redirectBack, 
+                redirectReject, 
+                redirectConfirm
+            })
+
+            const hash = Jwt.generateLinkJwt(invoice._id)
+            const payPageUrl = config.get('payPageUrl')
+            invoice.payLink = `${payPageUrl}?hash=${hash}`
+
+            await invoice.save({ session })
+
+            createdInvoiceId = invoice._id
+        }, { writeConcern: { w: 'majority' } })
+
+        return await Invoice.findById(createdInvoiceId)
+    } 
+    catch(e) {
+        console.log('--- ERROR CREATE INVOICE ---', e);
+        if(e?.notFind) { 
+            const data = await Payment.getList({ status: Const.payment.statusList.ACTIVE })
+            const activePayments = data.list
+
+            return {
+                errorTitle: "notFind",
+                payload: activePayments.map(({_id, card, status, minLimit, maxLimit, currentAmount}) => ({ _id, card, status, minLimit, maxLimit, currentAmount }))
+            }        
+        }
+        if([Exception.isExist, Exception.clientIsBlocked, Exception.clientHasActive].includes(e)) { throw e }
+        throw Exception.notCanSaveModel
+    } 
+    finally {
+        await session.endSession()
+        if(paymentId) { await Payment.refresh(paymentId) }
+    }
 }
+
 
 async function forse(user, id, status=Const.invoice.statusList.REJECT) {
     const invoice = await get(id)

@@ -35,7 +35,7 @@ async function invoiceListByPayment(payment) {
 
 // ---------- MAIN ----------
 
-async function create({ accessId, author }, { card, amount, refId, partnerId, course, filter }) {    
+async function create({ accessId, author }, { card, amount, refId, partnerId, course, filter }) {        
     const isExist = refId && !!(await Payment.findOne({ refId }))
     if(isExist) { throw Exception.isExist }
 
@@ -292,82 +292,87 @@ async function sendNcpayCallback(id) {
 
 // ---------- GET BEST ----------
 
-async function getBestByEqual(amount, filter=null) {        
-    const options = { 
-        status: Const.payment.statusList.ACTIVE, 
-        currentAmount: amount, 
-        isRefresh: true,
-        isTail: false,
-        isFreeze: false,
-        //$expr: { $eq: [{ $mod: [ amount, '$filter.round' ]}, 0] }
-    }
+// async function getBestByEqual(amount, filter=null) {        
+//     const options = { 
+//         status: Const.payment.statusList.ACTIVE, 
+//         currentAmount: amount, 
+//         isRefresh: true,
+//         isTail: false,
+//         isFreeze: false,
+//         //$expr: { $eq: [{ $mod: [ amount, '$filter.round' ]}, 0] }
+//     }
 
-    if(filter) {
-        if(filter.type) { options['filter.type'] = filter.type }
+//     if(filter) {
+//         if(filter.type) { options['filter.type'] = filter.type }
 
-        options['filter.conv'] = { $lte: (filter.conv || 0) }
-        options['filter.confirm'] = { $lte: (filter.confirm || 0) }
-    }
+//         options['filter.conv'] = { $lte: (filter.conv || 0) }
+//         options['filter.confirm'] = { $lte: (filter.confirm || 0) }
+//     }
 
-    const [best] = await Payment.aggregate([
-        { $match: options },
-        { $sort:  { createdAt: 1 } },
-        { $limit: 1 }
-    ])
+//     const [best] = await Payment.aggregate([
+//         { $match: options },
+//         { $sort:  { createdAt: 1 } },
+//         { $limit: 1 }
+//     ])
 
-    return best || null
-}
+//     return best || null
+// }
 
-async function getBestByLimits(amount, filter=null) {    
-    const options = { 
-        status: Const.payment.statusList.ACTIVE,
-        isFreeze: false,
-        minLimit: { $lte: amount }, 
-        maxLimit: { $gte: amount },
-        $expr: { $eq: [{ $mod: [ amount, '$filter.round' ]}, 0] }
-    }    
+// async function getBestByLimits(amount, filter=null) {    
+//     const options = { 
+//         status: Const.payment.statusList.ACTIVE,
+//         isFreeze: false,
+//         minLimit: { $lte: amount }, 
+//         maxLimit: { $gte: amount },
+//         $expr: { $eq: [{ $mod: [ amount, '$filter.round' ]}, 0] }
+//     }    
 
-    if(filter) {
-        if(filter.type) { options['filter.type'] = filter.type }
+//     if(filter) {
+//         if(filter.type) { options['filter.type'] = filter.type }
 
-        options['filter.conv'] = { $lte: (filter.conv || 0) }
-        options['filter.confirm'] = { $lte: (filter.confirm || 0) }
-    }
+//         options['filter.conv'] = { $lte: (filter.conv || 0) }
+//         options['filter.confirm'] = { $lte: (filter.confirm || 0) }
+//     }
 
-    const [best] = await Payment.aggregate([
-        {$match: options},
-        {$addFields: { delta: { $subtract: ["$maxLimit", amount] }}},
-        {$sort: { priority: -1, createdAt: 1 }},
-        {$limit: 1}
-    ])
+//     const [best] = await Payment.aggregate([
+//         {$match: options},
+//         {$addFields: { delta: { $subtract: ["$maxLimit", amount] }}},
+//         {$sort: { priority: -1, createdAt: 1 }},
+//         {$limit: 1}
+//     ])
 
-    return best || null
-}
+//     return best || null
+// }
 
-async function getBest(amount, filter=null) {    
-    const equalBest = await getBestByEqual(amount, filter)    
-    if(equalBest) { return await softGet(equalBest._id) }
+// async function getBest(amount, filter=null) {    
+//     const equalBest = await getBestByEqual(amount, filter)    
+//     if(equalBest) { return await softGet(equalBest._id) }
 
-    const limitBest = await getBestByLimits(amount, filter)
-    if(limitBest) { return await softGet(limitBest._id) }
+//     const limitBest = await getBestByLimits(amount, filter)
+//     if(limitBest) { return await softGet(limitBest._id) }
 
-    return null
-}
+//     return null
+// }
 
-async function choiceBest(amount, filter=null, step=0) {        
-    if(step > Const.maxSaveRecursion) { return null }
+// async function choiceBest(amount, filter=null, step=0) {        
+//     if(step > Const.maxSaveRecursion) { return null }
     
-    const bestPayment = await getBest(amount, filter)
-    if(!bestPayment) { return null }
+//     const bestPayment = await getBest(amount, filter)
+//     if(!bestPayment) { return null }
 
-    try {
-        bestPayment.isRefresh = false
-        return await save(bestPayment)
-    }
-    catch(error) {
-        console.log('----- Cant change best')
-        return choiceBest(amount, filter, step + 1)
-    }
+//     try {
+//         bestPayment.isRefresh = false
+//         return await save(bestPayment)
+//     }
+//     catch(error) {
+//         console.log('----- Cant change best')
+//         return choiceBest(amount, filter, step + 1)
+//     }
+// }
+
+async function reserveBest(amount, filter=null, session=null) {
+    try { return await Payment.reserveBest(amount, filter, session) }
+    catch(e) { throw Exception.notCanSaveModel }
 }
 
 // ---------- STATISTIC ----------
@@ -544,7 +549,7 @@ module.exports = {
     refresh,
     getMaxAvailable,
 
-    choiceBest,
+    // choiceBest,
     closeTail,
     pushTail,
 
@@ -560,6 +565,8 @@ module.exports = {
     unfreeze, 
     togglePriority,
     sendProofs,
+
+    reserveBest,
 
     getStatistics,
     sendNcpayCallback
