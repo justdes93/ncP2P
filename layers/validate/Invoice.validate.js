@@ -5,9 +5,16 @@ const Const = require('../../core/Const')
 const create = [
     check('amount', 'invalidAmount').notEmpty().isFloat({ min: Const.minInvoiceLimit, max: Const.maxInvoiceLimit }),
     check('refId', 'invalidRefId').optional().isString(),
-    check('partnerfId', 'invalidPartnerId').optional().isString(),
+    check('partnerId', 'invalidPartnerId').optional().isString(),
     check('bank', 'invalidBank').optional().isString(),
-    check('client', 'invalidBank').optional().isString(),
+    check('client', 'invalidValue').notEmpty().isString(),
+    check('template', 'invalidValue').optional().isString(),
+    check('isRisk', 'invalidValue').notEmpty(),
+    check('isBn', 'invalidValue').notEmpty(),
+
+    check('redirectBack', 'invalidValue').optional(),
+    check('redirectReject', 'invalidValue').optional(),
+    check('redirectConfirm', 'invalidValue').optional(),
 ]
 
 const pay = [
@@ -16,6 +23,11 @@ const pay = [
 
 const get = [
     check('id', 'invalidId').notEmpty().isMongoId(),
+]
+
+const change = [
+    check('id', 'invalidId').notEmpty().isMongoId(),
+    check('amount', 'invalidAmount').notEmpty().isFloat({ min: 0 })
 ]
 
 const list = [
@@ -29,5 +41,6 @@ module.exports = {
     create,
     pay,
     get,
+    change,
     list
 }

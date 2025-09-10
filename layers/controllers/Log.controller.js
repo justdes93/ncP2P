@@ -5,15 +5,21 @@ const Exception = require('@core/Exception')
 
 
 async function create(data={}) {
-    const log = new Log(data)    
-    
-    return await save(log) 
+    try {
+        const log = new Log(data)    
+        return await save(log) 
+    }
+    catch(err) {
+        console.log('======================== err in save log', err);
+        
+        return null
+    }
 }
 
 async function getAutoStatistic(user, timestart=0, timestop=Infinity) {  
     const options = { createdAt: { $gt: timestart, $lt: timestop } }
 
-    const dataMono = await Invoice.aggregate([
+    const dataMono = await Log.aggregate([
         { $match: { ...options, method: Const.bankList.MONO }},
         { $group: {
             _id: null,
@@ -27,8 +33,8 @@ async function getAutoStatistic(user, timestart=0, timestop=Infinity) {
         }}
     ]) 
 
-    const dataPrivat = await Invoice.aggregate([
-        { $match: { ...options, method: Const.bankList.MONO }},
+    const dataPrivat = await Log.aggregate([
+        { $match: { ...options, method: Const.bankList.PRIVAT }},
         { $group: {
             _id: null,
             count: { $sum: 1 },
@@ -40,13 +46,10 @@ async function getAutoStatistic(user, timestart=0, timestop=Infinity) {
             conversion: { $divide: [ "$countConfirm", "$count" ] },
         }}
     ]) 
-    
-    console.log(dataMono)
-    console.log(dataPrivat)
    
     return {
-        mono: dataMono,
-        privat: dataPrivat
+        mono: dataMono.length? dataMono[0] : null,
+        privat: dataPrivat.length? dataPrivat[0] : null,
     }
 }
 

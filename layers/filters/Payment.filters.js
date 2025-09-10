@@ -42,6 +42,8 @@ function get(filterData, forse={}) {
         options = {...options, currentAmount: amountOption} 
     }
 
+    if(filter?.partner?.length) { options = {...options, accessId: {$in: filter.partner} } }
+
     return options
 }
 

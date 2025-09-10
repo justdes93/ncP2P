@@ -5,17 +5,25 @@ module.exports = {
     invalidRefId: { status: 415, msg: 'Incorrect Reference Id' },
     invalidPartnerId: { status: 415, msg: 'Incorrect Partner Id' },
     invalidBank: { status: 415, msg: 'Incorrect Bank' },
+    invalidClient: { status: 415, msg: 'Incorrect Client' },
 
     manyProofs: { status: 415, msg: 'So many proofs. Please wait' },
     
     isExist: { status: 409, msg: 'Already Exists' },
     notFind: { status: 404, msg: "Can't Find" },
+    notFindPayment: { status: 404, msg: "Can't Find Payment" },
+
+    notFindActive: { status: 404, msg: "Can't Find active" },
+    notFindConfirm: { status: 404, msg: "Can't Find confirm" },
+
     cantCloseInvoice: { status: 409, msg: 'Cant Close Final Invoice' },
     cantRefreshPayment: { status: 409, msg: 'Cant Reject Final Payment' },
     cantPushTail: { status: 409, msg: 'This payment have avtiv invoices or waiting for tail' },
 
     cardBlocked: { status: 409, msg: 'Card is Blocked' },
     clientHasActive: { status: 409, msg: 'Client has Active' },
+    clientIsBlocked: { status: 413, msg: 'Client is Blocked' },
+    iAmTeapot: { status: 418, msg: 'I Am Teapot!!!' },
 
     notAuth: { status: 401, msg: 'Bad Auth' },
     notAccess: { status: 401, msg: 'Not Access' },

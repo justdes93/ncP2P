@@ -9,6 +9,7 @@
 .menu {
     display: flex;
     gap: 32px;
+    margin-right: auto;
 }
 
 .title {

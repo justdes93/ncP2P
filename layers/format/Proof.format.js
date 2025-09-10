@@ -5,12 +5,14 @@ const admin = (proof) => ({
     status: proof.status,
     payment: proof.payment,
     gpt: proof.gpt,
-    
+
+    paymentAccessName: proof.paymentAccessName,    
     invoiceSubstatus: proof.invoiceSubstatus,
 
     client: proof.client,
     confirm: proof.confirm,
     conv: proof.conv,
+    ncpayConv: proof.ncpayConv,
 
     bank: proof.bank,
     amount: proof.amount,
@@ -20,7 +22,10 @@ const admin = (proof) => ({
     kvitNumber: proof.kvitNumber,
     kvitFile: proof.kvitFile,
     fileLink: proof.fileLink,
-
+    type: proof.type,
+    isRisk: proof.isRisk,
+    isScam: proof.isScam,
+    
     lastCheck: proof.lastCheck,
     isChecking: proof.isChecking,
 
@@ -43,6 +48,7 @@ const client = (proof) => ({
     id: proof._id,
     invoice: proof.invoice,
     status: proof.status,
+    type: proof.type,
 
     bank: proof.bank,
     amount: proof.amount,

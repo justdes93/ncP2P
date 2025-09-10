@@ -1,15 +1,14 @@
 .alert {
     position: absolute;
     right: 0;
-    top: 0;
+    top: 80px;
     padding: 18px 24px;
     max-width: 240px;
 
     background-color: #2e3e74; 
     color: #6b9bff; 
 
-    transform: translateY(-100%);
-
+    transform: translateY(calc(-80px - 100%));
 }
 
 .alert.message {

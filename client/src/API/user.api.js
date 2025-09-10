@@ -18,6 +18,21 @@ export default function useUserApi() {
         try { return await protectedRequest('api/user/get', {id}) }
         catch(error) { return null } 
     }
+    
+    const UserList = async () => {
+        try { return await protectedRequest('api/user/user-list', {}) }
+        catch(error) { return [] } 
+    }
+
+    const MakerList = async () => {
+        try { return await protectedRequest('api/user/maker-list', {}) }
+        catch(error) { return [] } 
+    }
+
+    const PartnerList = async () => {
+        try { return await protectedRequest('api/user/partner-list', {}) }
+        catch(error) { return [] } 
+    }
 
     const getAutoStatistics = async (start, stop) => {       
         try { return await protectedRequest('api/user/autoStatistic', {start, stop}) }
@@ -28,6 +43,9 @@ export default function useUserApi() {
         twoFA,
         verify,
         get,
+        UserList,
+        MakerList,
+        PartnerList,
         getAutoStatistics
     }
 }

@@ -23,10 +23,18 @@ const schema = new Schema({
     client: { type: String, default: null },
     conv: { type: Number, default: -1 },
     confirm: { type: Number, default: -1 },
+    ncpayConv: { type: Object, default: null },
+
+    isRisk: {type: Boolean, default: false},
+    isScam: {type: Boolean, default: false},
 
     kvitNumber: { type: String, default: null },
     kvitFile: { type: String, default: null },
     payLink: { type: String, default: null },
+
+    redirectBack: { type: String, default: null }, 
+    redirectReject: { type: String, default: null },
+    redirectConfirm: { type: String, default: null },
 
     createdAt: { type: Number },
     updatedAt: { type: Number }

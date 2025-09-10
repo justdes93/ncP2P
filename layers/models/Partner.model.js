@@ -1,3 +1,4 @@
+const Const = require('@core/Const')
 const {Schema, model, Types} = require('mongoose')
 
 const schema = new Schema({
@@ -6,6 +7,12 @@ const schema = new Schema({
     privateToken: {type: String},
     callbackUrl: {type: String},
     whiteList: [],
+
+    paymentMinLimit: {
+        default: {type: Number, default: Const.payment.minLimit.default},
+        customLimit: {type: Number, default: Const.payment.minLimit.customLimit},
+        persent: {type: Number, default: Const.payment.minLimit.persent}
+    }
 })
 
 module.exports = model('Partner', schema)

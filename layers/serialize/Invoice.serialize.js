@@ -9,7 +9,15 @@ const create = (req, _, next) => {
         refId: req.body.refId || '',
         partnerId: req.body.partnerId || '',
         bank: req.body.bank || null,
-        client: req.body.client || null
+        client: req.body.client || null,
+        ncpayConv: req.body.conv,
+        isRisk: req.body.isRisk || false,
+        isBn: req.body.isBn || false,
+        template: req.body.template || null, 
+
+        redirectBack: req.body.redirectBack || null,
+        redirectReject: req.body.redirectReject || null,
+        redirectConfirm: req.body.redirectConfirm || null
     }
 
     next()
@@ -18,6 +26,15 @@ const create = (req, _, next) => {
 const get = async (req, _, next) => {   
     req.body = { 
         id: toObjectId(req.body.id),
+    }
+
+    next()
+}
+
+const change = async (req, _, next) => {   
+    req.body = { 
+        id: toObjectId(req.body.id),
+        amount: req.body.amount
     }
 
     next()
@@ -46,5 +63,6 @@ module.exports = {
     create,
     pay,
     get,
+    change,
     list
 }

@@ -6,11 +6,13 @@ import { useSelector } from 'react-redux'
 import * as authSelectors from '../../redux/selectors/auth.selectors'
 
 import styles from './Menu.module.css'
+import PartnerSelect from './PartnerSelect/PartnerSelect'
 
 
 function Menu() {
     const { logout } = useAuth()
     const access = useSelector(authSelectors.access)
+
 
     return (
         <div className={styles.main}>
@@ -78,6 +80,9 @@ function Menu() {
                     </NavLink>
                 )}
             </div>
+
+            <PartnerSelect />
+
             <div className={styles.logout}>
                 <div className={styles.item} onClick={logout}>
                     <div className={styles.icon}>

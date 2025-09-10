@@ -17,6 +17,10 @@ const clientFile = [
     check('hash', 'invalidId').notEmpty().isString(),
 ]
 
+const get = [
+    check('id', 'invalidValue').notEmpty().isMongoId(),
+]
+
 const decline = [
     check('id', 'invalidValue').notEmpty().isMongoId(),
 ]
@@ -47,5 +51,6 @@ module.exports = {
     decline,
     approve,
     recheck,
-    list
+    list,
+    get
 }

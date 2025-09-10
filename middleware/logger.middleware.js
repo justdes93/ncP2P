@@ -17,15 +17,16 @@ async function logger(req, res, next) {
   
     res.send = function (body) {       
         try {
-            req.logs.statusCode = res.statusCode        
-            req.logs.res = JSON.parse(body)
             req.logs.time = Date.now() - req.logs.time
+            req.logs.statusCode = res.statusCode      
             req.logs.user = req.user?.login? req.user.login : null
-
+            req.logs.res = JSON.parse(body)
+            
             if(!req.skipLog) { Log.create(req.logs).then() }
         }
         catch(err) {
-            console.log(err)
+            console.log('Error in log:\n', err, '\n', req.logs)
+            if(!req.skipLog) { Log.create(req.logs).then() }
         }
 
         return originalSend.call(this, body)

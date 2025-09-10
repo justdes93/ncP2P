@@ -10,6 +10,7 @@ const schema = new Schema({
     statusCode: { type: String, default: null },
     req: { type: Object, default: null },
     res: { type: Object, default: null },
+    payload: { type: Object, default: null },
 
     createdAt: { type: Number },
     updatedAt: { type: Number }

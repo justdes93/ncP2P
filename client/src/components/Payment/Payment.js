@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import usePaymentApi from '../../API/payment.api'
 import { formatAmount } from '../../utils'
+import { useSelector } from "react-redux"
 
 import styles from './Payment.module.css'
 import Copy from '../UI/copy'
+import Input from '../UI/Input'
+import useInput from '../../hooks/input.hook'
+import * as authSelectors from '../../redux/selectors/auth.selectors'
 
 
 function formatCardNumber(number) {
@@ -20,15 +24,36 @@ function formatTime(milliseconds) {
 
 function Payment({payment, refresh}) {
     const paymentApi = usePaymentApi()
+    const access = useSelector(authSelectors.access)
+
+    const tailAmount = useInput()
     
+    const [isCallback, setIsCallback] = useState(false)
     const [isWaitFreeze, setIsWaitFreeze] = useState(false)
     const [isRejectWait, setIsRejectWait] = useState(false)
     const [isTailWait, setIsTailWait] = useState(false)
+    const [isTailDefaultWait, setIsTailDefaultWait] = useState(false)
+
+    const [custom, setCustom] = useState(false)
+
+    const callbackHandler = async () => {
+        if(!isCallback) { 
+            setIsTailWait(false)
+            setIsRejectWait(false)
+            setIsTailDefaultWait(false)
+
+            return setIsCallback(true) 
+        }
+
+        await paymentApi.ncPayCallback(payment.id) 
+        setIsCallback(false) 
+    }
 
     const freezeHandler = async () => {
         if(!isWaitFreeze) { 
             setIsTailWait(false)
             setIsRejectWait(false)
+            setIsTailDefaultWait(false)
 
             return setIsWaitFreeze(true) 
         }
@@ -44,6 +69,7 @@ function Payment({payment, refresh}) {
         if(!isRejectWait) { 
             setIsTailWait(false)
             setIsWaitFreeze(false)
+            setIsTailDefaultWait(false)
 
             return setIsRejectWait(true) 
         }
@@ -53,16 +79,39 @@ function Payment({payment, refresh}) {
         refresh()
     }
 
-    const tailHandler = async () => {
+    const tailHandler = async () => {       
         if(!isTailWait) { 
             setIsRejectWait(false) 
             setIsWaitFreeze(false)
+            setIsTailDefaultWait(false)
 
             return setIsTailWait(true)
         }
-
-        await paymentApi.push(payment.id)
+        
+        await paymentApi.push(payment.id, tailAmount.value)
+        
         setIsTailWait(false) 
+        tailAmount.clear()
+        setCustom(false)
+
+        load()
+        refresh()
+    }
+
+    const tailDefaultHandler = async () => {       
+        if(!isTailWait) { 
+            setIsRejectWait(false) 
+            setIsWaitFreeze(false)
+            setIsTailWait(true)
+
+            return setIsTailDefaultWait(true)
+        }
+        
+        await paymentApi.push(payment.id, 1, true)
+        
+        setIsTailDefaultWait(false)
+
+        load()
         refresh()
     }
 
@@ -77,8 +126,14 @@ function Payment({payment, refresh}) {
     }
 
     const [subStatus, setSubStatus] = useState('')
+    const [tails, setTails] = useState([])
 
-    useEffect(() => {        
+    const load = async () => {
+        const list = await paymentApi.getTails(payment.id)
+        setTails(list)
+    }
+
+    useEffect(() => {               
         if(payment?.isAllValidOk) { setSubStatus('VALID-OK') }
         if(payment?.isOneValid) { setSubStatus('VALID') }
         if(payment?.isOneWait) { setSubStatus('WAIT') }
@@ -87,7 +142,10 @@ function Payment({payment, refresh}) {
             if(!subStatus) { setSubStatus('TAIL') }
             else {  setSubStatus('TAIL-VALID') }
         }
+
+        load()
     }, [])
+
 
     return (
         <div className={styles.main}>
@@ -101,7 +159,18 @@ function Payment({payment, refresh}) {
             <div className={styles.excel}>
                 <div className={styles.card}>
                     <Copy value={payment?.card} label={formatCardNumber(payment?.card)} />
+                    {payment?.accessName && <div className={styles.proofs}>{payment?.accessName}</div>}
                     <span className={styles.proofs} onClick={() => proofsHandler()}>Get Proofs to Telegram</span>
+
+                    {!!payment?.tailId && <div className={styles.row}>
+                        <Copy value={payment?.tailAmount} label={`tail = ${formatAmount(payment?.tailAmount)}`}  />
+                        <span  style={{color: payment?.isTail? '#f6a740' : '#4bef81'}} >{payment?.isTail? 'wait' : 'confirm'}</span> 
+                    </div>}
+                    
+                    {tails.map((tail) => <div className={styles.row}>
+                        <Copy value={tail?.amount} label={`tail = ${formatAmount(tail?.amount)}`}  />
+                        <span className={styles.tail} data-type={tail?.status} >{tail?.status}</span> 
+                    </div>)}
                 </div>
             </div>
             <div className={styles.excel}>
@@ -136,15 +205,15 @@ function Payment({payment, refresh}) {
                             <i className="fa-solid fa-star"></i>
                         </button>
 
-                        {payment?.isFreeze && <>
+                        {payment?.isFreeze && <div className={styles.col}>                            
                             <button 
                                 className={`${styles.button} ${isTailWait? styles.open : null}`} 
-                                onClick={() => tailHandler()}
+                                onClick={() => { tailDefaultHandler() }}
                                 data-type="accept"
                             >
                                 PTail
                             </button>
-                        </>}
+                        </div>}
 
                         {payment.status === "ACTIVE" && <>
                             <button 
@@ -156,6 +225,44 @@ function Payment({payment, refresh}) {
                             </button>
                         </>}
                     </div>
+
+                    <div className={styles.buttons} >
+                        {payment?.filter?.type === 'NCPAY' && payment.status !== "SUCCESS" && payment.status !== "REJECT" && 
+                            <>
+                                <button 
+                                    className={`${styles.button} ${isCallback? styles.open : null}`} 
+                                    onClick={() => callbackHandler()}
+                                    data-type="accept"
+                                >
+                                    Confirm Callback
+                                </button>
+                            </>
+                        }
+                    </div>
+
+                    {payment?.isFreeze  && (access === 'MAKER' || access === 'ADMIN') && <div className={styles.line}>
+                        {custom && <>
+                            <Input input={tailAmount} placeholder='Amount' className={styles.input} />
+                                
+                            <button 
+                                className={`${styles.button} ${isTailWait? styles.open : null}`} 
+                                onClick={() => { tailHandler() }}
+                                data-type="accept"
+                            >
+                                PTail
+                            </button>
+                        </>}
+
+                        {!custom && <>
+                            <button 
+                                className={`${styles.button}`} 
+                                onClick={() => { setCustom(true) }}
+                                data-type="accept"
+                            >
+                                PTCustom
+                            </button>
+                        </>}
+                    </div>}
                 </div>
             </div>
             <div className={styles.excel}>

@@ -7,7 +7,6 @@ const Const = require('@core/Const')
 async function handleTask(task) {
     if(task.type === 'CLOSE') {        
         const invoice = await Invoice.get(task.payload.invoice)
-        console.log(task.payload.invoice, invoice)
         
         if(invoice.status === Const.invoice.statusList.WAIT) {
             return await Invoice.reject(null, invoice._id)

@@ -33,6 +33,11 @@ export default function usePaymentApi() {
         catch(error) { return null } 
     }
 
+    const ncPayCallback = async (id) => {       
+        try { return await protectedRequest('api/payment/ncpay/callback', {id}) }
+        catch(error) { return null } 
+    }
+
     const freeze = async (id) => {       
         try { return await protectedRequest('api/payment/freeze', {id}) }
         catch(error) { return null } 
@@ -48,8 +53,8 @@ export default function usePaymentApi() {
         catch(error) { return null } 
     }
 
-    const push = async (id) => {       
-        try { return await protectedRequest('api/payment/push', {id}) }
+    const push = async (id, amount, auto=false) => {                      
+        try { return await protectedRequest('api/payment/push', {id, amount, auto}) }
         catch(error) { return null } 
     }
 
@@ -58,8 +63,13 @@ export default function usePaymentApi() {
         catch(error) { return false } 
     }
 
-    const getStatistics = async (start, stop) => {       
-        try { return await protectedRequest('api/payment/statistic', {start, stop}) }
+    const getTails = async (id) => {       
+        try { return await protectedRequest('api/payment/tails', {id}) }
+        catch(error) { return [] } 
+    }
+
+    const getStatistics = async (start, stop, accessId=null) => {       
+        try { return await protectedRequest('api/payment/statistic', {start, stop, accessId }) }
         catch(error) { return null } 
     }
 
@@ -73,8 +83,10 @@ export default function usePaymentApi() {
         unfreeze,
         push,
         getProofs,
+        getTails,
 
         togglePriority,
-        getStatistics
+        getStatistics,
+        ncPayCallback
     }
 }

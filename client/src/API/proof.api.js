@@ -33,11 +33,17 @@ export default function useProofApi() {
         catch(error) { return {list: [], count: 0} } 
     }
 
+    const getStatistics = async (start, stop, userId) => {       
+        try { return await protectedRequest('api/proof/statistic', {start, stop, userId}) }
+        catch(error) { return null } 
+    }
+
     return { 
         approve,
         decline,
         manual,
         recheck,
+        getStatistics,
 
         list
     }

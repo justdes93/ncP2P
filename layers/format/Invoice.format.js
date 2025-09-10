@@ -1,3 +1,5 @@
+const Const = require('@core/Const')
+
 
 const parnter = (invoice) => ({
     id: invoice._id,
@@ -21,6 +23,7 @@ const admin = (invoice) => ({
     client: invoice.client,
     confirm: invoice.confirm,
     conv: invoice.conv,
+    ncpayConv: invoice.ncpayConv,
 
     status: invoice.status,
     validOk: invoice.validOk,
@@ -30,6 +33,8 @@ const admin = (invoice) => ({
     kvit: invoice.kvitFile,
     kvitNumber: invoice.kvitNumber,
     payLink: invoice.payLink,
+    isRisk: invoice.isRisk,
+    isScam: invoice.isScam,
 
     createdAt: invoice.createdAt,
 })
@@ -44,6 +49,10 @@ const client = (invoice) => ({
 
     status: invoice.status,
     card: invoice.card,
+
+    redirectBack: invoice.redirectBack || null,
+    redirectReject: invoice.redirectReject || null,
+    redirectConfirm: invoice.redirectConfirm || null,
 
     createdAt: invoice.createdAt,
 })

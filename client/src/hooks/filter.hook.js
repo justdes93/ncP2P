@@ -11,6 +11,13 @@ export default function useFilter() {
     const setPoolFilter = (filter) => { dispatch(filterActions.setPool(filter)) } 
     const setProofFilter = (filter) => { dispatch(filterActions.setProof(filter)) } 
 
+    const setPartnersFilter = (list) => {
+        setPaymentsFilter({ partner: list })
+        setInvoicesFilter({ partner: list })
+        setPoolFilter({ partner: list })
+        setProofFilter({ partner: list })
+    }
+
     const clearPaymentsFilter = () => { dispatch(filterActions.clearPayments()) }    
     const clearInvoicesFilter = () => { dispatch(filterActions.clearInvoices()) }
     const clearPoolFilter = () => { dispatch(filterActions.clearPool()) }
@@ -28,6 +35,8 @@ export default function useFilter() {
         setInvoicesFilter,
         setPoolFilter,
         setProofFilter,
+
+        setPartnersFilter,
 
         clearPaymentsFilter,
         clearInvoicesFilter,

@@ -13,6 +13,11 @@ export default function useInvoiceApi() {
         catch(error) { return null } 
     }
 
+    const forse = async (id) => {       
+        try { return await protectedRequest('api/invoice/forse', {id}) }
+        catch(error) { return null } 
+    }
+
     const valid = async (id) => {       
         try { return await protectedRequest('api/invoice/valid', {id}) }
         catch(error) { return null } 
@@ -20,6 +25,16 @@ export default function useInvoiceApi() {
 
     const validOk = async (id) => {       
         try { return await protectedRequest('api/invoice/validOk', {id}) }
+        catch(error) { return null } 
+    }
+
+    const scam = async (id) => {       
+        try { return await protectedRequest('api/invoice/scam', {id}) }
+        catch(error) { return null } 
+    }
+
+    const change = async (id, amount) => {       
+        try { return await protectedRequest('api/invoice/change', {id, amount}) }
         catch(error) { return null } 
     }
 
@@ -38,6 +53,9 @@ export default function useInvoiceApi() {
         valid,
         validOk,
         list,
+        forse,
+        change,
+        scam,
 
         getStatistics
     }

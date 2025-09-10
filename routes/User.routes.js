@@ -8,8 +8,10 @@ const Serialise = require('@serialize/User.serialize')
 const Format = require('@format/User.format')
 
 const User = require('@controllers/User.controller')
+const Partner = require('@controllers/Partner.controller')
 const Log = require('@controllers/Log.controller')
 const { Auth, isAdmin, isMaker, isSupport } = require('@middleware/auth.middleware')
+const Const = require('@core/Const')
 
 
 const router = Router()
@@ -48,6 +50,25 @@ router.post('/login', Validate.login, Serialise.twoFA,
         res.status(200).json({ token, userId: user._id, access: user.access })
     })
 )
+
+router.post('/user-list', Auth, Interceptor(async (req, res) => {
+    const list = await User.list()
+
+    res.status(201).json(list)
+})) 
+
+router.post('/maker-list', Auth, Interceptor(async (req, res) => {
+    const makersList = await User.list(Const.userAccess.MAKER)
+    const adminsList = await User.list(Const.userAccess.ADMIN)
+
+    res.status(201).json([...makersList, ...adminsList])
+})) 
+
+router.post('/partner-list', Auth, Interceptor(async (req, res) => {
+    const list = await Partner.list()
+
+    res.status(201).json(list.map((partner) => ({ id: partner._id, name: partner.name })))
+}))
 
 router.post('/autoStatistic', Auth, isMaker,
     Interceptor(async (req, res) => {

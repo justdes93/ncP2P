@@ -6,6 +6,7 @@ const cors = require('cors')
 const path = require('path')
 const logger = require('@middleware/logger.middleware')
 const Task = require('@controllers/Task.controller')
+const Payment = require('@models/Payment.model')
 const NcApi = require('@utils/NcApi')
 const fs = require('fs')
 
@@ -33,9 +34,47 @@ app.use('/api/admin', require('./routes/Admin.route'))
 
 app.get('/kvits/:path', (req, res) => { res.sendFile(path.resolve(__dirname, 'static', 'kvits', `${req.params.path}`)) })
 
+process.on('uncaughtException', (error) => {
+    console.error('❗️Необработанное исключение!')
+    console.error('Сообщение:', error.message)
+    console.error('Стек вызовов:', error.stack)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❗️Необработанное отклонение промиса!')
+    if (reason instanceof Error) {
+        console.error('Сообщение:', reason.message)
+        console.error('Стек вызовов:', reason.stack)
+    } else {
+        console.error('Причина:', reason)
+    }
+})
+
+async function ensurePaymentsValidator() {
+  const db = mongoose.connection.db
+  const coll = Payment.collection.name 
+
+  try {
+    await db.command({collMod: coll, validator: { $expr: { $gte: ["$currentAmount", 0] } }, validationLevel: "strict" })
+    console.log('[payments] validator ensured')
+  } 
+  catch (e) {
+    const nsNotFound = e?.code === 26 || e?.codeName === 'NamespaceNotFound'
+    if(nsNotFound) {
+      await db.createCollection(coll)
+      await db.command({ collMod: coll, validator: { $expr: { $gte: ["$currentAmount", 0] } }, validationLevel: "strict" })
+      console.log(`[${coll}] collection created + validator attached`)
+    } 
+    else {
+      console.warn(`[${coll}] validator ensure failed:`, e.message)
+    }
+  }
+}
 
 async function start() {
-    await mongoose.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+    await mongoose.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, autoIndex: false  })
+    await Payment.syncIndexes()
+    await ensurePaymentsValidator()
 
     Task.query().then()
     NcApi.makeSubscribe()

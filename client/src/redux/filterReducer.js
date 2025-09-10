@@ -13,6 +13,7 @@ const initialState = {
 
         card: '',
         status: null,
+        partner: [],
 
         initialAmount: { min: '', max: '' },
         currentAmount: { min: '', max: '' },
@@ -26,6 +27,7 @@ const initialState = {
         status: null,
         card: '',
         payment: '',
+        partner: [],
 
         amount: { min: '', max: '' },
         initialAmount: { min: '', max: '' },
@@ -38,6 +40,7 @@ const initialState = {
         status: ['WAIT'],
         card: '',
         payment: '',
+        partner: [],
 
         amount: { min: '', max: '' },
         initialAmount: { min: '', max: '' },
@@ -50,6 +53,7 @@ const initialState = {
         status: ['WAIT', 'VALID'],
         bank: '',
         kvit: '',
+        partner: [],
 
         amount: { min: '', max: '' }
     },

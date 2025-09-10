@@ -135,7 +135,7 @@
     padding: 6px 8px;
     font-size: 12px;
     font-weight: 600;
-    min-width: 64px;
+    min-width: 92px;
     color: #7c849b;
     width: fit-content;
 }
@@ -154,6 +154,11 @@
     min-width: 80px;
 }
 
+.action {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
 
 .priority {
     display: block;
@@ -186,4 +191,44 @@
 
 .proofs:hover {
     color: #fbffff;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+}
+
+.input {
+    padding: 4px;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.line {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.tail[data-type="WAIT"] {
+    color: #f6a740;
+}
+
+.tail[data-type="CONFIRM"] {
+    color: #4bef81;
+}
+
+.tail[data-type="REJECT"] {
+    color: #ff6b6b; /* Ярко-красный */
+}
+
+.tail[data-type="CREATE"] {
+    color: #6b9bff; /* Ярко-синий */
 }

@@ -24,8 +24,17 @@ async function get(id) {
     return partner
 }
 
+// List
+async function list() {
+    let options = {}
+
+    const partners = await Parnter.find(options)
+    return partners
+}
+
 
 module.exports = { 
     create, 
     get,
+    list
 }

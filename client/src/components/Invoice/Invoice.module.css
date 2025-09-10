@@ -77,6 +77,12 @@
     color: #6bffeb;
 }
 
+.line {
+    width: 100%;
+    background-color: #2e3e74;
+    height: 2px;
+}
+
 .time {
     max-width: 80px;
     margin-left: auto;
@@ -85,21 +91,20 @@
 
 
 .buttons {
-    /* display: flex;
+    display: flex;
     align-items: center;
-    justify-content: center; */
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    justify-content: center;
+
 }
 
 .button {
     padding: 6px 8px;
     font-size: 12px;
     font-weight: 600;
-    min-width: 64px;
+    max-width: 100px;
+    min-width: 62px;
     color: #7c849b;
-    width: fit-content;
+    white-space: nowrap;
 }
 
 .button[data-type="accept"]:hover {
@@ -131,4 +136,23 @@
 .conv {
     margin-right: 16px;
     font-size: 14px;
+}
+
+.input {
+    padding: 4px;
+    max-width: 140px;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }

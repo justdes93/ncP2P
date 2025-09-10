@@ -5,6 +5,7 @@ import useProofApi from '../../API/proof.api'
 import usePage from '../../hooks/page.hook'
 
 import * as filterSelectors from '../../redux/selectors/filter.selectors'
+import * as authSelectors from '../../redux/selectors/auth.selectors'
 
 import Proof from '../../components/Proof/Proof'
 import ProofFilter from '../../components/ProofFilter/ProofFilter'
@@ -23,16 +24,29 @@ function Valid() {
   const pagination = usePage(30)
   const page = pagination.page
 
+  const user = useSelector(authSelectors.userId)
   const triger = useSelector(filterSelectors.proofTriger)
   const auto = useSelector(filterSelectors.proofAuto)
 
   const [proofs, setProofs] = useState([])
+  const [data, setData] = useState(null)
 
   const load = async (page) => {
     const {list, count} = await proofApi.list(page, pagination.limit)
 
     pagination.setCount(count)
     setProofs(list)
+
+    const now = new Date()
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startTime = startOfDay.getTime()
+    const stopTime = now.getTime()
+
+    const proofData = await proofApi.getStatistics(startTime, stopTime, user)
+    if(proofData?.avgWaitToFinal) { proofData.avgWaitToFinal = `${parseInt(proofData.avgWaitToFinal / (1000 * 60))} min ${parseInt(proofData.avgWaitToFinal / 1000) % 60} s` }
+    if(proofData?.avgValidOkToFinal) { proofData.avgValidOkToFinal = `${parseInt(proofData.avgValidOkToFinal / (1000 * 60))} min ${parseInt(proofData.avgValidOkToFinal / 1000) % 60} s` }
+
+    setData(proofData)
   }
 
   const autoHandler = () => dispatch(filterActions.autoProof())
@@ -52,7 +66,10 @@ function Valid() {
   return (
     <div className={styles.main}>
         <div className={styles.top}>
-          <div>
+          <div className={styles.row}>
+            <div>
+              Count: {data?.finalCount || 0} | Wait: {data?.avgWaitToFinal || 0} | ValidOk: {data?.avgValidOkToFinal || 0}
+            </div>
             <div className={`${styles.auto} ${auto? styles.open : null}`} onClick={autoHandler}>Auto</div>
           </div>
           <ProofFilter />

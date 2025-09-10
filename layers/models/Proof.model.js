@@ -1,10 +1,11 @@
 const {Schema, model, Types} = require('mongoose')
-const Const = require('../../core/Const')
-const { lstat } = require('fs')
+const Const = require('@core/Const')
 
 
 const schema = new Schema({
     paymentAccessId: { type: Types.ObjectId, ref: 'Partner' },
+    paymentAccessName: { type: String, default: '' },
+    user: { type: Types.ObjectId, ref: 'User' },
 
     invoice: { type: Types.ObjectId, ref: 'Invoice' },
     invoiceRefId: { type: String, default: null },
@@ -25,6 +26,7 @@ const schema = new Schema({
     client: { type: String, default: null },
     conv: { type: Number, default: -1 },
     confirm: { type: Number, default: -1 },
+    ncpayConv: { type: Object, default: null },
 
     kvitNumber: { type: String, default: null },
     kvitFile: { type: String, default: null },
@@ -39,9 +41,17 @@ const schema = new Schema({
 
     lastCheck: { type: Number, default: 0 },
     isChecking: { type: Boolean, default: false },
+    type: { type: String, default: Const.payment.filter.types.DEFAULT },
+    isRisk: {type: Boolean, default: false},
+    isScam: {type: Boolean, default: false},
 
     createdAt: { type: Number },
-    updatedAt: { type: Number }
+    updatedAt: { type: Number },
+    
+    toConfirm: { type: Number, default: 0 },
+    toReject: { type: Number, default: 0 },
+    toManual: { type: Number, default: 0 },
+    toValidok: { type: Number, default: 0 },
 }, {
     timestamps: { currentTime: () => Date.now() }
 })

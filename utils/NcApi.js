@@ -25,7 +25,7 @@ const makeSubscribe = (callbackUrl=`${config.get('serverUrl')}/api/payment`, cal
 const makeOrder = (card, value, referenceId, callback=()=>{}) => {
     try {
         const url = config.get('NcApiUrl') + '/order/create'
-        const body = { maker: config.get('maker'), currency: 'uah', card, value, referenceId }
+        const body = { maker: config.get('maker'), currency: 'uah', card, value, referenceId: `${referenceId}_${Date.now()}` }
         
         protectedRecuest(url, body, callback)
     }

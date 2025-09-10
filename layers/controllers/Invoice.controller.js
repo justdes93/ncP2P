@@ -1,15 +1,16 @@
-const { moreAmount } = require('@utils/telegram.utils')
+const { moreAmount, sendMessage } = require('@utils/telegram.utils')
 const NcPay = require('@utils/NcPay')
+const mongoose = require('mongoose')
 
 const Invoice = require('@models/Invoice.model')
 const Payment = require('@controllers/Payment.controller')
 const Proof = require('@models/Proof.model')
 const Jwt = require('@utils/Jwt.utils')
+const {sendChange, sendForse} = require('@utils/telegram.utils')
 
 const Exception = require('@core/Exception')
 const Const = require('@core/Const')
 const config = require('config')
-const telegram = require('@utils/telegram.utils')
 
 // ---------- SUPPORT FUNCTION ----------
 
@@ -64,45 +65,180 @@ async function setSubstatus(invoice) {
 
 // ---------- MAIN ----------
 
-async function create({ amount, bank, refId, partnerId, client }) {    
-    const isExist = refId && !!(await Invoice.findOne({ refId })) 
-    if(isExist) { throw Exception.isExist }
+// async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm }) {          
+//     const isExist = refId && !!(await Invoice.findOne({ refId })) 
+//     if(isExist) { throw Exception.isExist }
 
-    const activeInvoice = await Invoice.findOne({ client, status: Const.invoice.activeStatusList, validOk: false })
-    const isClientWait = client && !!(activeInvoice) 
-    if(isClientWait) { 
-        telegram.clientHasActive(activeInvoice)
-        throw Exception.clientHasActive 
-    }
+//     // const activeInvoice = await Invoice.findOne({ client, status: Const.invoice.activeStatusList, validOk: false })
+//     const activeInvoices = await Invoice.find({ client, status: Const.invoice.activeStatusList, validOk: false })
+//     const activeCount = activeInvoices.length
 
-    const payment = await Payment.choiceBest(amount)
-    if(!payment) { throw Exception.notFind }
+//     const blockInvoice = await Invoice.findOne({ client, isScam: true })
+//     const isClientWait = client && ((!ncpayConv?.trust && activeCount > 0) || (ncpayConv?.trust && activeCount > 2))
+//     const isClientBlock = client && !!(blockInvoice) 
 
-    const { conv, confirm } = await getConv(client)
+//     const testClients = ['test_client', '794_6311f3e40c3283cdb1d36a70', '881_680a4766a46c55d20a1decf9']
+//     if(isClientBlock && !testClients.includes(client)) { throw Exception.clientIsBlocked }    
+//     if(isClientWait && !testClients.includes(client)) { throw Exception.clientHasActive }    
 
-    console.log(payment.accessId)
+//     const { conv, confirm } = await getConv(client)
     
-    const invoice = new Invoice({ 
-        paymentAccessId: payment.accessId,
-        refId, partnerId,
-        initialAmount: amount,
-        amount, 
-        bank, client,
-        payment: payment._id,
-        paymentRefId: payment.refId,
-        paymentPartnerId: payment.partnerId,
-        card: payment.card,
-        conv, confirm
-    })
+//     let payment = null
+//     //if(Math.random() > Const.invoice.ncPayRandom) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }) }
+//     if(isBn) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }) }
+//     if(!payment) { payment = await Payment.choiceBest(amount, { type: Const.payment.filter.types.DEFAULT, conv, confirm }) }
+//     if(!payment) { 
+//         const data = await Payment.getList({ status: Const.payment.statusList.ACTIVE })
+//         const activePayments = data.list
 
-    const hash = Jwt.generateLinkJwt(invoice._id)
-    const payPageUrl = config.get('payPageUrl')
+//         return {
+//             errorTitle: "notFind",
+//             payload: activePayments.map(({_id, card, status, minLimit, maxLimit, current}) => ({ _id, card, status, minLimit, maxLimit, current }))
+//         }
+//     }
 
-    invoice.payLink = `${payPageUrl}?hash=${hash}`
+//     const invoice = new Invoice({ 
+//         paymentAccessId: payment.accessId,
+//         refId, partnerId,
+//         initialAmount: amount,
+//         amount, 
+//         bank, client,
+//         payment: payment._id,
+//         paymentRefId: payment.refId,
+//         paymentPartnerId: payment.partnerId,
+//         card: payment.card,
+//         conv, confirm,
+//         ncpayConv,
+//         isRisk,
 
-    await save(invoice)
-    await Payment.refresh(payment._id)
+//         redirectBack, 
+//         redirectReject, 
+//         redirectConfirm
+//     })     
+
+//     const hash = Jwt.generateLinkJwt(invoice._id)
+//     const payPageUrl = config.get('payPageUrl')
+
+//     invoice.payLink = `${payPageUrl}?hash=${hash}`
+
+//     await save(invoice)
+//     await Payment.refresh(payment._id)
      
+//     return invoice
+// }
+
+
+async function create({ amount, bank, refId, partnerId, client, ncpayConv, isRisk, isBn, redirectBack, redirectReject, redirectConfirm}) {
+    const session = await mongoose.startSession()
+    let createdInvoiceId = null
+    let paymentId = null
+
+    try {        
+        await session.withTransaction(async () => {
+            const isExist = refId && !!(await Invoice.findOne({ refId }).session(session))
+            if(isExist) { throw Exception.isExist }
+
+            // const activeInvoice = await Invoice.findOne({ client, status: Const.invoice.activeStatusList, validOk: false }).session(session)
+            const activeInvoices = await Invoice.find({ client, status: Const.invoice.activeStatusList, validOk: false }).session(session)
+            const activeCount = activeInvoices.length
+
+            const blockInvoice = await Invoice.findOne({ client, isScam: true }).session(session)
+            const isClientWait = client && ((!ncpayConv?.trust && activeCount > 0) || (ncpayConv?.trust && activeCount > 2))
+            const isClientBlock = client && !!(blockInvoice) 
+
+            const testClients = ['test_client', '794_6311f3e40c3283cdb1d36a70', '881_680a4766a46c55d20a1decf9']
+            if(isClientBlock && !testClients.includes(client)) { throw Exception.clientIsBlocked }    
+            if(isClientWait && !testClients.includes(client)) { throw Exception.clientHasActive }    
+
+
+            const { conv, confirm } = await getConv(client)
+            console.log(conv, confirm)            
+
+            let paymentDoc = null
+            //if(Math.random() > Const.invoice.ncPayRandom) { paymentDoc = await Payment.reserveBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }, session) }
+            if(isBn) { paymentDoc = await Payment.reserveBest(amount, { type: Const.payment.filter.types.NCPAY, conv, confirm }, session) }
+            if(!paymentDoc) { paymentDoc = await Payment.reserveBest(amount, { type: Const.payment.filter.types.DEFAULT, conv, confirm }, session) }
+            if(!paymentDoc) { throw { notFind: true } }  
+
+            paymentId = paymentDoc._id
+            
+
+            const invoice = new Invoice({
+                paymentAccessId: paymentDoc.accessId,
+                refId, partnerId,
+                availableAmount: paymentDoc.currentAmount,
+                initialAmount: amount,
+                amount,
+                bank, client,
+                payment: paymentDoc._id,
+                paymentRefId: paymentDoc.refId,
+                paymentPartnerId: paymentDoc.partnerId,
+                card: paymentDoc.card,
+                conv, confirm,
+                ncpayConv, 
+                isRisk,
+                
+                redirectBack, 
+                redirectReject, 
+                redirectConfirm
+            })
+
+            const hash = Jwt.generateLinkJwt(invoice._id)
+            const payPageUrl = config.get('payPageUrl')
+            invoice.payLink = `${payPageUrl}?hash=${hash}`
+
+            await invoice.save({ session })
+
+            createdInvoiceId = invoice._id
+        }, { writeConcern: { w: 'majority' } })
+
+        return await Invoice.findById(createdInvoiceId)
+    } 
+    catch(e) {
+        console.log('--- ERROR CREATE INVOICE ---', e);
+        if(e?.notFind) { 
+            const data = await Payment.getList({ status: Const.payment.statusList.ACTIVE })
+            const activePayments = data.list
+
+            return {
+                errorTitle: "notFind",
+                payload: activePayments.map(({_id, card, status, minLimit, maxLimit, currentAmount}) => ({ _id, card, status, minLimit, maxLimit, currentAmount }))
+            }        
+        }
+        if([Exception.isExist, Exception.clientIsBlocked, Exception.clientHasActive].includes(e)) { throw e }
+        throw Exception.notCanSaveModel
+    } 
+    finally {
+        await session.endSession()
+        if(paymentId) { await Payment.refresh(paymentId) }
+    }
+}
+
+
+async function forse(user, id, status=Const.invoice.statusList.REJECT) {
+    const invoice = await get(id)
+    invoice.status = status
+    const newInvoice = await save(invoice)
+
+    // NcPay.callback(newInvoice)
+    sendForse(newInvoice)
+    
+    await Payment.refresh(invoice.payment)
+
+    return invoice
+}
+
+async function change(user, id, amount) {
+    const invoice = await get(id)
+    if(invoice.status !== Const.invoice.statusList.CONFIRM) { throw Exception.notFind }
+    invoice.amount = amount
+    const newInvoice = await save(invoice)
+
+    // NcPay.callback(newInvoice)
+    sendChange(newInvoice)
+
+    await Payment.refresh(invoice.payment)
+
     return invoice
 }
 
@@ -111,7 +247,7 @@ async function finalize(user, id, status=Const.invoice.statusList.REJECT, stopCa
     invoice.status = status
     const newInvoice = await save(invoice)
 
-    if(!stopCallback) { NcPay.callback(newInvoice) }
+    if(!stopCallback) { NcPay.invoiceCallback(newInvoice) }
     
     await Payment.refresh(invoice.payment)
 
@@ -138,6 +274,37 @@ async function toValidOk(user, id) {
     const newInvoice = await save(invoice)
     await Payment.refresh(invoice.payment)
 
+    try {
+        const proofs = await Proof.find({ invoice })
+        proofs.forEach(async (proof) => {
+            proof.toValidok = Date.now()
+            await proof.save()
+        })
+    }
+    catch(err) {
+        console.log(err)        
+    }
+
+    return newInvoice
+}
+
+async function toScam(id) {
+    const invoice = await get(id)
+    invoice.isScam = !invoice.isScam
+
+    const newInvoice = await save(invoice)
+
+    try {
+        const proofs = await Proof.find({ invoice })
+        proofs.forEach(async (proof) => {
+            proof.isScam = invoice.isScam
+            await proof.save()
+        })
+    }
+    catch(err) {
+        console.log(err)        
+    }
+
     return newInvoice
 }
 
@@ -155,8 +322,8 @@ async function changeAmount(id, amount) {
 async function close(id, amount) {    
     const invoice = await get(id)
 
-    if(invoice.status === Const.invoice.statusList.CONFIRM) { throw Exception.notFind }
-    if(invoice.amount === amount) { return await confirm(id) }
+    if(invoice.status === Const.invoice.statusList.CONFIRM) { throw Exception.notFindConfirm }
+    if(parseInt(invoice.amount) === parseInt(amount)) { return await confirm(id) }
 
     const delta = amount - invoice.initialAmount
     const available = await Payment.getMaxAvailable(invoice.payment, invoice)
@@ -166,9 +333,14 @@ async function close(id, amount) {
         return await confirm(id)
     }
 
-    console.log('SEND CUSTOM CALLBACK')
-    NcPay.callback({_doc: {...invoice, amount: invoice.amount + available, status: Const.invoice.statusList.CONFIRM }})
-    moreAmount(invoice, amount)
+    try {
+        console.log('SEND CUSTOM CALLBACK')
+        NcPay.invoiceCallback({_doc: {...invoice, amount: invoice.amount + available, status: Const.invoice.statusList.CONFIRM }})
+        moreAmount(invoice, amount)
+    }
+    catch(err) {
+        console.log('|||--- ', err)        
+    }
     
     await changeAmount(id, amount)    
     return await confirm(id, true) 
@@ -177,7 +349,7 @@ async function close(id, amount) {
 async function pay(id) {
     const invoice = await getActive(id)
 
-    invoice.status = Const.invoice.statusList.VALID
+    invoice.status = Const.invoice.statusList.VALID 
 
     const newInvoice = await save(invoice)
     await Payment.refresh(invoice.payment)
@@ -200,33 +372,56 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
         { $group: {
             _id: { $dateToString: { format, date: "$date" } },
             count: { $sum: 1 },
-            countConfirm: { $sum: { $cond: { if: { $eq: ['$status', "CONFIRM"] }, then: 1, else: 0 }}},
-
             total: { $sum: '$amount'},
+
+            countConfirm: { $sum: { $cond: { if: { $eq: ['$status', "CONFIRM"] }, then: 1, else: 0 }}},
             totalConfirm: { $sum: { $cond: { if: { $eq: ['$status', "CONFIRM"] }, then: '$amount', else: 0 }}},
             totalInitialConfirm: { $sum: { $cond: { if: { $eq: ['$status', "CONFIRM"] }, then: '$initialAmount', else: 0 }}},
+            
+            countValid: { $sum: { $cond: { if: { $and: [ { $eq: ['$status', "VALID"] }, { $eq: ['$validOk', false] } ] }, then: 1, else: 0 }}},
+            totalValid: { $sum: { $cond: { if: { $and: [ { $eq: ['$status', "VALID"] }, { $eq: ['$validOk', false] } ] }, then: '$amount', else: 0 }}},
+
+            countValidOk: { $sum: { $cond: { if: { $and: [ { $eq: ['$status', "VALID"] }, { $eq: ['$validOk', true] } ] }, then: 1, else: 0 }}},
+            totalValidOk: { $sum: { $cond: { if: { $and: [ { $eq: ['$status', "VALID"] }, { $eq: ['$validOk', true] } ] }, then: '$amount', else: 0 }}},
+
             dt: { $sum: '$dt' }
         }},
         { $sort: { _id: 1 } },
         { $project: {
             count: 1,
-            countConfirm: 1,
-            conversion: { $divide: [ "$countConfirm", "$count" ] },
-
             total: 1,
+
+            countConfirm: 1,
             totalConfirm: 1,
             totalInitialConfirm: 1,
 
+            countValid: 1,
+            totalValid: 1,
+            
+            countValidOk: 1,
+            totalValidOk: 1,
+
+            conversion: { $divide: [ {$sum: [ "$countConfirm", "$countValidOk"]}, "$count" ] },
             dt: 1,
         }}
     ]) 
     
     let count = 0
-    let confirmCount = 0
-    let conversion = 0
     let total = 0
+
+    let confirmCount = 0
     let totalConfirm = 0
     let totalInitialConfirm = 0
+
+    let countValid = 0
+    let totalValid = 0
+
+    let countValidOk = 0
+    let totalValidOk = 0
+
+    let totalValidandValidOk = 0
+
+    let conversion = 0
     let avarageTime = 0
     let avarageSum = 0
 
@@ -234,10 +429,14 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
     data.forEach((item) => {
         count += item.count
         confirmCount += item.countConfirm
+        countValid += item.countValid
+        countValidOk += item.countValid
 
         total += item.total
         totalConfirm += item.totalConfirm
         totalInitialConfirm += item.totalInitialConfirm
+        totalValid += item.totalValid
+        totalValidOk += item.totalValidOk
 
         avarageTime += item.dt
     })   
@@ -245,6 +444,7 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
     conversion = confirmCount / (count || 1)
     avarageTime = avarageTime / (count || 1)
     avarageSum = totalConfirm / (confirmCount || 1)
+    totalValidandValidOk = totalValid + totalValidOk
         
     return {
         count,
@@ -254,7 +454,12 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
         totalConfirm,
         totalInitialConfirm,
         avarageSum,
-        avarageTime
+        avarageTime,
+        countValid,
+        countValidOk,
+        totalValid,
+        totalValidOk,
+        totalValidandValidOk
     }
     
     //data
@@ -306,7 +511,7 @@ async function getByUser(user, id) {
 
 async function getActive(_id) {
     const invoice = await Invoice.findOne({ _id, status: {$in: Const.invoice.activeStatusList} })
-    if(!invoice) { throw Exception.notFind }
+    if(!invoice) { throw Exception.notFindActive }
 
     return invoice
 }
@@ -315,7 +520,7 @@ async function getActiveByUser(user, id) {
     const invoice = await getActive(id)
 
     if(user.access === Const.userAccess.MAKER) {
-        if(!invoice.paymentAccessId.equals(user.accessId)) { throw Exception.notFind }
+        if(!invoice.paymentAccessId.equals(user.accessId)) { throw Exception.notFindActive }
     }
 
     return invoice
@@ -341,11 +546,16 @@ module.exports = {
     changeAmount,
     close,
     pay,
-
+    change,
+    
     toValid,
     toValidOk,
+    toScam,
+    
+    forse,
     getStatistics,
 
     get,
-    list
+    list,
+    save
 }

@@ -25,6 +25,13 @@ function Proof({proof, refresh}) {
 
     const [wait, setWait] = useState(false)
 
+    let clientColor = '#4bef81'
+    if(proof?.conv < 0.5 || proof?.confirm < 10) { clientColor = '#ff6b6b' }
+    else if(!!proof?.ncpayConv?.all?.conversion && (proof?.ncpayConv?.all?.conversion < 0.5 || proof?.ncpayConv?.all?.confirmCount < 10)) { clientColor = '#f6a740' }
+    else if(!!proof?.ncpayConv?.later30?.conversion && (proof?.ncpayConv?.later30?.conversion < 0.5 || proof?.ncpayConv?.later30?.confirmCount < 10)) { clientColor = '#f6a740' }
+    if(proof?.ncpayConv?.trust) { clientColor = '#4bef81' }
+
+
     const declineHandler = async () => {
         if(!isDecline) { return setIsDecline(true) }
 
@@ -80,6 +87,7 @@ function Proof({proof, refresh}) {
             <div className={styles.excel}>
                 <div className={styles.card}>
                     <div className={styles.item}>
+                        {proof?.paymentAccessName && <div>{proof?.paymentAccessName}</div>}
                         <Copy value={proof?.id} label={proof?.id? proof.id : 'SystemId'} />
                         <Copy value={proof?.payment} label={proof?.payment? proof.payment : 'PaymentId'} />
                         <Copy value={proof?.kvitNumber} label={proof?.kvitNumber} />
@@ -116,7 +124,7 @@ function Proof({proof, refresh}) {
                 }
             </div>
             <div className={styles.excel}>
-                {(access === 'ADMIN' || access === 'SUPPORT') && (proof.status === 'WAIT' || proof.status === 'MANUAL') 
+                {(access === 'ADMIN' || access === 'SUPPORT' || access === 'MAKER') && (proof.status === 'WAIT' || proof.status === 'MANUAL') 
                  && !wait && 
                  (
                     <div className={styles.action}>
@@ -169,9 +177,20 @@ function Proof({proof, refresh}) {
             <div className={styles.excel}>
                 <div className={styles.client}>
                     <Copy value={proof?.client? proof?.client : ""} label={proof?.client? proof?.client : "Unknow Client"} />
+                    {!!proof?.client && <div className={styles.line} style={{backgroundColor: clientColor}}></div>}
                     {!!proof?.client && proof?.conv !== -1 && 
-                        <div className={styles.conv}>{(proof?.conv).toFixed(2) } / <span className={styles.green}>{ proof?.confirm }</span></div>
+                        <div className={styles.conv}>p2p: {(proof?.conv).toFixed(2) } / <span className={styles.green}>{ proof?.confirm }</span></div>
                     }
+                    {!!proof?.client && !!proof?.ncpayConv?.all && 
+                        <div className={styles.conv}>ncp: {(proof?.ncpayConv?.all?.conversion).toFixed(2) } / <span className={styles.green}>{ proof?.ncpayConv?.all?.confirmCount }</span></div>
+                    }
+                    {!!proof?.client && !!proof?.ncpayConv?.later30 && 
+                        <div className={styles.conv}>nLd: {(proof?.ncpayConv?.later30?.conversion).toFixed(2) } / <span className={styles.green}>{ proof?.ncpayConv?.later30?.confirmCount }</span></div>
+                    }
+                    {!!proof?.client && proof?.ncpayConv?.trust && <div className={styles.conv} style={{color: "#66cc66" }}>trust: true</div>}
+                    {!!proof?.type && proof?.type === 'NCPAY' && <div className={styles.conv}>npay: True</div>}
+                    {!!proof?.isRisk && <div className={styles.conv} style={{color: "#ff6b6b" }}>risk: True</div>}
+                    {!!proof?.isScam && <div className={styles.conv} style={{color: "#ff6b6b" }}>SCAM: True</div>}
                 </div>
             </div>
             <div className={styles.excel}>

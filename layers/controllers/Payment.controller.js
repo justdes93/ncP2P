@@ -4,26 +4,30 @@ const Const = require('@core/Const')
 const Payment = require('@models/Payment.model')
 const Invoice = require('@models/Invoice.model')
 const Proof = require('@models/Proof.model')
+const Tail = require('@controllers/Tail.controller')
+const Partner = require('@controllers/Partner.controller')
 
 const { round } = require('@utils/utils')
-const { makeOrder } = require('@utils/NcApi')
 const config = require('config')
-
+const { sendOld } = require('@utils/telegram.utils')
+const { paymentCallback } = require('@utils/NcPay')
 // ---------- SUPPORT FUNCTION ----------
 
-function getMinLimit(amount) {
-    if(amount < Const.payment.minLimit.customLimit) { 
-        return Const.payment.minLimit.default
+function getMinLimit(amount, paymentMinLimit=Const.payment.minLimit) {
+    if(amount < paymentMinLimit.customLimit) { 
+        return paymentMinLimit.default
     }
 
-    return round(amount * Const.payment.minLimit.persent, 100)
+    return round(amount * paymentMinLimit.persent, 100)
 } 
 
 async function invoiceListByPayment(payment) {
+    const waitList = await Invoice.find({ payment, status: Const.invoice.statusList.WAIT })
     const activeList = await Invoice.find({ payment, status: { $in: Const.invoice.activeStatusList } })
     const finaleList = await Invoice.find({ payment, status: Const.invoice.statusList.CONFIRM })
 
     return {
+        wait: waitList,
         active: activeList,
         finale: finaleList
     }
@@ -31,15 +35,18 @@ async function invoiceListByPayment(payment) {
 
 // ---------- MAIN ----------
 
-async function create({ accessId, author }, { card, amount, refId, partnerId, course }) {    
+async function create({ accessId, author }, { card, amount, refId, partnerId, course, filter }) {        
     const isExist = refId && !!(await Payment.findOne({ refId }))
     if(isExist) { throw Exception.isExist }
 
-    const minLimit = getMinLimit(amount)
+    const partner = await Partner.get(accessId)
+
+    const minLimit = getMinLimit(amount, partner.paymentMinLimit)
     const maxLimit = amount > Const.minNcApiLimit? amount - Const.minNcApiLimit : minLimit
     
     const payment = new Payment({ 
         author, accessId,
+        accessName: partner.name,
         refId, partnerId,
         card, amount, course,
         initialAmount: amount,
@@ -47,15 +54,21 @@ async function create({ accessId, author }, { card, amount, refId, partnerId, co
         minLimit, maxLimit,
     })
 
+    if(filter) { payment.filter = filter }
+
     return await save(payment)
 }
 
-async function refresh(id) {            
+async function refresh(id) {     
+    console.log('refresh')
+              
     const payment = await get(id)
+    if(payment.status === Const.payment.statusList.REJECT) { return }  
+    if(!!payment.tailId) { return sendOld(payment) }  
 
-    if(payment.status === Const.payment.statusList.REJECT) { return }
-
+    const partner = await Partner.get(payment.accessId)
     const invoiceList = await invoiceListByPayment(id)
+    const tails = await Tail.list(id)
 
     let isOneWait = false
     let isOneValid = false
@@ -77,18 +90,30 @@ async function refresh(id) {
     payment.isOneValid = isOneValid
     payment.isAllValidOk = isAllValidOk
 
+    let isTail = false
+    let tailAmount = 0
+
+    tails.forEach((tail) => { 
+        if(tail.status === Const.tail.statusList.WAIT) { isTail = true } 
+        if(tail.status === Const.tail.statusList.CREATE && !!tail.tailId) { isTail = true } 
+
+        if(tail.status === Const.tail.statusList.WAIT || tail.status === Const.tail.statusList.CONFIRM) {
+            tailAmount += tail.amount
+        }
+    })
+
     const finaleAmount = invoiceList.finale.reduce((amount, invoice) => (amount + invoice.amount), 0)
     const waitAmount = invoiceList.active.reduce((amount, invoice) => (amount + invoice.amount), 0)
-    const isWait = !!invoiceList.active.length || payment.isTail
+    const isWait = !!invoiceList.active.length || isTail
 
-    const currentAmount = payment.initialAmount - payment.tailAmount - finaleAmount - waitAmount
-    const minLimit = getMinLimit(payment.initialAmount)
+    const currentAmount = payment.initialAmount - tailAmount - finaleAmount - waitAmount    
+    const minLimit = getMinLimit(payment.initialAmount, partner.paymentMinLimit)
     const maxLimit = currentAmount - Const.minNcApiLimit
 
     payment.currentAmount = currentAmount
     payment.isRefresh = true
     payment.isWait = isWait
-    
+
     if(payment.isFreeze) { 
         payment.status = Const.payment.statusList.BLOCKED
 
@@ -99,25 +124,28 @@ async function refresh(id) {
         payment.status = Const.payment.statusList.SUCCESS
         payment.amount = payment.initialAmount - currentAmount
 
-        // callback()
+        await save(payment)
 
-        return await save(payment)
+        return paymentCallback(payment)
     }
 
-    if(maxLimit >= minLimit && maxLimit >= Const.minInvoiceLimit) {        
+    if(maxLimit >= minLimit && maxLimit >= Const.minInvoiceLimit) {      
         payment.status = Const.payment.statusList.ACTIVE
         payment.maxLimit = maxLimit
         
+        const isChangeMinLimit = (minLimit !== payment.minLimit)
+        if(isChangeMinLimit && maxLimit !== currentAmount) { payment.minLimit = minLimit }
+        
         return await save(payment)
-    }    
+    }
     
-    if(currentAmount % 100 === 0 && currentAmount >= Const.minInvoiceLimit) {        
+    if(currentAmount % 100 === 0 && currentAmount >= Const.minInvoiceLimit) {       
         payment.status = Const.payment.statusList.ACTIVE
         payment.minLimit = currentAmount
         payment.maxLimit = currentAmount
 
         return await save(payment)
-    }    
+    }
 
     if(isWait) {
         payment.status = Const.payment.statusList.BLOCKED
@@ -139,57 +167,49 @@ async function refresh(id) {
 
     //NCAPI
 
-    payment.status = Const.payment.statusList.BLOCKED
-    payment.isWait = true
+    if(!payment.tails.length && payment?.filter?.type === Const.payment.filter.types.NCPAY) { 
+        payment.status = Const.payment.statusList.BLOCKED
+        payment.isWait = true
 
-    const savePayment = await save(payment)
+        const savePayment = await save(payment)
 
-    if(!payment.tailId) { await sendToNcApi(payment) }
-
-    return savePayment
-}
-
-async function sendToNcApi(payment) {           
-    makeOrder(payment.card, payment.currentAmount, payment._id, async (invoice) => {
-        try {
-            const newPayment = await get(payment.id)
+        await pushTail(null, id, payment.currentAmount) 
         
-            newPayment.isTail = true
-            newPayment.tailId = invoice.body.id
-            newPayment.tailAmount = payment.currentAmount
-            
-            await save(newPayment)
+        return savePayment
+    }
+    else {
+        payment.status = Const.payment.statusList.BLOCKED
+        payment.isWait = true
+        if(payment?.filter?.type !== Const.payment.filter.types.NCPAY) { 
+            payment.isFreeze = true 
         }
-        catch(error) {
-            console.log('----cant bind tail:', invoice.body)
-            console.log(error)
-        }
-    })
+
+        return await save(payment)
+    }
 }
 
-async function pushTail(user, id) {       
-    const payment = await getByUser(user, id)
+async function pushTail(user, id, amount, auto=false) {          
+    const payment = user? await getByUser(user, id) : await get(id)
 
     const invoiceList = await invoiceListByPayment(id)
 
-    if(payment.isTail) { throw Exception.cantPushTail }
-    if(!!invoiceList.active.length && !payment.isAllValidOk) { throw Exception.cantPushTail }
+    // if(payment.isTail) { throw Exception.cantPushTail }
+    // if(!!invoiceList.active.length && !payment.isAllValidOk) { throw Exception.cantPushTail }
 
-    sendToNcApi(payment) 
+    if(!!invoiceList.wait.length) { throw Exception.cantPushTail }
+    if(auto && payment.currentAmount <= 0) { throw Exception.invalidAmount }
+
+    const tail = await Tail.create(payment.card, auto? payment.currentAmount : amount, payment._id)
+    if(tail) { payment.tails.push(tail._id) }
+    
+    await save(payment)
+    await refresh(id)
 }
 
-async function closeTail(tailId, status) {       
-    if(status !== 'CONFIRM') { return }    
+async function closeTail(tailId, status) {     
+    const paymentId = await Tail.close(tailId, status)
 
-    const payment = await Payment.findOne({ tailId })
-    if(!payment) { throw Exception.notFind }
-
-    payment.status = Const.payment.statusList.SUCCESS
-    payment.isTail = false
-
-    await save(payment)
-
-    return await refresh(payment._id)
+    return await refresh(paymentId)
 }
 
 async function reject(user, id) {   
@@ -201,6 +221,8 @@ async function reject(user, id) {
     payment.status = Const.payment.statusList.REJECT
 
     await save(payment)
+    paymentCallback(payment)
+
     return await refresh(payment._id)
 }
 
@@ -262,68 +284,102 @@ async function sendProofs(user, id) {
     return list
 }
 
+async function sendNcpayCallback(id) {        
+    const payment = await get(id)
+    paymentCallback({...payment?._doc, status: Const.payment.statusList.SUCCESS})
+}
+
+
 // ---------- GET BEST ----------
 
-async function getBestByEqual(amount) {        
-    const list = await Payment.find({ 
-        status: Const.payment.statusList.ACTIVE, 
-        currentAmount: amount, 
-        isRefresh: true,
-        isTail: false,
-        isFreeze: false
-    }).sort({ createdAt: 1 })
+// async function getBestByEqual(amount, filter=null) {        
+//     const options = { 
+//         status: Const.payment.statusList.ACTIVE, 
+//         currentAmount: amount, 
+//         isRefresh: true,
+//         isTail: false,
+//         isFreeze: false,
+//         //$expr: { $eq: [{ $mod: [ amount, '$filter.round' ]}, 0] }
+//     }
 
-    return list.length? list[0] : null
-}
+//     if(filter) {
+//         if(filter.type) { options['filter.type'] = filter.type }
 
-async function getBestByLimits(amount) {    
-    const options = { 
-        status: Const.payment.statusList.ACTIVE,
-        isFreeze: false,
-        minLimit: { $lte: amount }, 
-        maxLimit: { $gte: amount }
-    }
+//         options['filter.conv'] = { $lte: (filter.conv || 0) }
+//         options['filter.confirm'] = { $lte: (filter.confirm || 0) }
+//     }
 
-    const list = await Payment.aggregate([
-        {$match: options},
-        {$addFields: { delta: { $subtract: ["$maxLimit", amount] }}},
-        {$sort: { priority: -1, createdAt: 1 }}
-    ])
+//     const [best] = await Payment.aggregate([
+//         { $match: options },
+//         { $sort:  { createdAt: 1 } },
+//         { $limit: 1 }
+//     ])
 
-    return list.length? list[0] : null
-}
+//     return best || null
+// }
 
-async function getBest(amount) {    
-    const equalBest = await getBestByEqual(amount)    
-    if(equalBest) { return await softGet(equalBest._id) }
+// async function getBestByLimits(amount, filter=null) {    
+//     const options = { 
+//         status: Const.payment.statusList.ACTIVE,
+//         isFreeze: false,
+//         minLimit: { $lte: amount }, 
+//         maxLimit: { $gte: amount },
+//         $expr: { $eq: [{ $mod: [ amount, '$filter.round' ]}, 0] }
+//     }    
 
-    const limitBest = await getBestByLimits(amount)
-    if(limitBest) { return await softGet(limitBest._id) }
+//     if(filter) {
+//         if(filter.type) { options['filter.type'] = filter.type }
 
-    return null
-}
+//         options['filter.conv'] = { $lte: (filter.conv || 0) }
+//         options['filter.confirm'] = { $lte: (filter.confirm || 0) }
+//     }
 
-async function choiceBest(amount, step=0) {        
-    if(step > Const.maxSaveRecursion) { return null }
+//     const [best] = await Payment.aggregate([
+//         {$match: options},
+//         {$addFields: { delta: { $subtract: ["$maxLimit", amount] }}},
+//         {$sort: { priority: -1, createdAt: 1 }},
+//         {$limit: 1}
+//     ])
+
+//     return best || null
+// }
+
+// async function getBest(amount, filter=null) {    
+//     const equalBest = await getBestByEqual(amount, filter)    
+//     if(equalBest) { return await softGet(equalBest._id) }
+
+//     const limitBest = await getBestByLimits(amount, filter)
+//     if(limitBest) { return await softGet(limitBest._id) }
+
+//     return null
+// }
+
+// async function choiceBest(amount, filter=null, step=0) {        
+//     if(step > Const.maxSaveRecursion) { return null }
     
-    const bestPayment = await getBest(amount)
-    if(!bestPayment) { return null }
+//     const bestPayment = await getBest(amount, filter)
+//     if(!bestPayment) { return null }
 
-    try {
-        bestPayment.isRefresh = false
-        return await save(bestPayment)
-    }
-    catch(error) {
-        console.log('----- Cant change best');
-        return choiceBest(amount, step + 1)
-    }
+//     try {
+//         bestPayment.isRefresh = false
+//         return await save(bestPayment)
+//     }
+//     catch(error) {
+//         console.log('----- Cant change best')
+//         return choiceBest(amount, filter, step + 1)
+//     }
+// }
+
+async function reserveBest(amount, filter=null, session=null) {
+    try { return await Payment.reserveBest(amount, filter, session) }
+    catch(e) { throw Exception.notCanSaveModel }
 }
 
 // ---------- STATISTIC ----------
 
-async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m-%d", options={}) {   
+async function getStatistics(user, timestart=0, timestop=Infinity, options={}, format="%Y-%m-%d") {   
     if(user && user.access === Const.userAccess.MAKER) { options.accessId = user.accessId }
-
+    
     const data = await Payment.aggregate([
         { $match: { ...options, createdAt: { $gt: timestart, $lt: timestop } }},
         { $addFields: {
@@ -336,8 +392,16 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
             countConfirm: { $sum: { $cond: { if: { $eq: ['$status', "SUCCESS"] }, then: 1, else: 0 }}},
 
             total: { $sum: '$amount'},
+            totalInitial: { $sum: '$initialAmount'},
             totalConfirm: { $sum: { $cond: { if: { $eq: ['$status', "SUCCESS"] }, then: '$amount', else: 0 }}},
             totalInitialConfirm: { $sum: { $cond: { if: { $eq: ['$status', "SUCCESS"] }, then: '$initialAmount', else: 0 }}},
+
+            totalBlocked: { $sum: { $cond: { if: { $eq: ['$status', "BLOCKED"] }, then: '$currentAmount', else: 0 }}},
+            totalUSDT: { $sum: { $cond: { if: { $or: [{$eq: ['$course', 0]}, {$eq: ['$status', "REJECT"]}] }, then: 0, else: { $divide: ['$initialAmount', "$course" ] } }}},
+
+            totalReject: { $sum: { $cond: { if: { $eq: ['$status', "REJECT"] }, then: '$initialAmount', else: 0 }}},
+            totalConfirm: { $sum: { $cond: { if: { $eq: ['$status', "SUCCESS"] }, then: '$amount', else: 0 }}},
+
             dt: { $sum: '$dt' }
         }},
         { $sort: { _id: 1 } },
@@ -347,12 +411,19 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
             conversion: { $divide: [ "$countConfirm", "$count" ] },
 
             total: 1,
+            totalInitial: 1,
             totalConfirm: 1,
             totalInitialConfirm: 1,
 
+            totalBlocked: 1,
+            totalInitialBlocked: 1,
+
+            totalReject: 1,
+            totalUSDT: 1,
+        
             dt: 1,
         }}
-    ]) 
+    ])
     
     let count = 0
     let confirmCount = 0
@@ -362,7 +433,14 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
     let totalInitialConfirm = 0
     let avarageTime = 0
     let avarageSum = 0
+    let totalInitial = 0
+    let totalReject = 0
+    let totalNoReject = 0
+    let totalUSDT = 0
 
+    let totalInitialBlocked = 0
+    let totalBlocked = 0
+    let overPayments = 0
 
     data.forEach((item) => {
         count += item.count
@@ -372,12 +450,21 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
         totalConfirm += item.totalConfirm
         totalInitialConfirm += item.totalInitialConfirm
 
+        totalBlocked += item.totalBlocked
+        totalInitialBlocked += item.totalInitialBlocked
+
+        totalReject += item.totalReject
+        totalInitial += item.totalInitial
+        totalUSDT += item.totalUSDT
+
         avarageTime += item.dt
     })   
 
     conversion = confirmCount / (count || 1)
     avarageTime = avarageTime / (count || 1)
     avarageSum = totalConfirm / (confirmCount || 1)
+    overPayments = totalInitialConfirm - totalConfirm + totalBlocked
+    totalNoReject = totalInitial - totalReject
         
     return {
         count,
@@ -387,7 +474,11 @@ async function getStatistics(user, timestart=0, timestop=Infinity, format="%Y-%m
         totalConfirm,
         totalInitialConfirm,
         avarageSum,
-        avarageTime
+        avarageTime,
+        overPayments,
+        totalReject,
+        totalNoReject,
+        totalUSDT
     }
     
     //data
@@ -418,7 +509,7 @@ async function save(payment) {
 
 async function get(_id) {
     const payment = await Payment.findOne({ _id })
-    if(!payment) { throw Exception.notFind }
+    if(!payment) { throw Exception.notFindPayment }
     
     return payment
 }
@@ -458,10 +549,11 @@ module.exports = {
     refresh,
     getMaxAvailable,
 
-    choiceBest,
+    // choiceBest,
     closeTail,
     pushTail,
 
+    getList,
     list,
 
     get,
@@ -474,5 +566,8 @@ module.exports = {
     togglePriority,
     sendProofs,
 
-    getStatistics
+    reserveBest,
+
+    getStatistics,
+    sendNcpayCallback
 }

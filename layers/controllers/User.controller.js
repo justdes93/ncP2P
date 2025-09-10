@@ -48,6 +48,14 @@ async function twoFAVerify(id, code) {
 
 // ---------- DEFAULT ----------
 
+// List
+async function list(access=null) {
+    let options = {}
+    if(access) { options = {...options, access} }
+
+    const users = await User.find(options)
+    return users
+}
 
 async function save(user) {
     try { return await user.save() }
@@ -68,5 +76,6 @@ module.exports = {
     twoFA,
     twoFAVerify,
 
-    get
+    get,
+    list
 }

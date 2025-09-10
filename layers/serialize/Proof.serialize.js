@@ -31,6 +31,16 @@ const clientFile = (req, _, next) => {
     next()
 }
 
+
+const hostFile = (req, _, next) => {   
+    req.body = { 
+        id: req.body.id,
+        kvitFile: req.file?.filename || null,
+    }
+
+    next()
+}
+
 const decline = (req, _, next) => {   
     req.body = { 
         id: toObjectId(req.body.id)
@@ -74,6 +84,7 @@ module.exports = {
     create,
     clientNumber,
     clientFile,
+    hostFile,
     decline,
     approve,
     recheck,
