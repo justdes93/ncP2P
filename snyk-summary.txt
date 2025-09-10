@@ -1,0 +1,49 @@
+
+Testing D:\ncP2P-2...
+
+Tested 245 dependencies for known issues, found 9 issues, 11 vulnerable paths.
+
+
+Issues to fix by upgrading:
+
+  Upgrade bcrypt@5.1.1 to bcrypt@6.0.0 to fix
+  ✗ Regular Expression Denial of Service (ReDoS) [Low Severity][https://security.snyk.io/vuln/SNYK-JS-BRACEEXPANSION-9789073] in brace-expansion@1.1.11
+    introduced by bcrypt@5.1.1 > @mapbox/node-pre-gyp@1.0.11 > rimraf@3.0.2 > glob@7.2.3 > minimatch@3.1.2 > brace-expansion@1.1.11
+  ✗ Missing Release of Resource after Effective Lifetime [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-INFLIGHT-6095116] in inflight@1.0.6
+    introduced by bcrypt@5.1.1 > @mapbox/node-pre-gyp@1.0.11 > rimraf@3.0.2 > glob@7.2.3 > inflight@1.0.6
+
+  Upgrade multer@1.4.5-lts.1 to multer@2.0.2 to fix
+  ✗ Uncaught Exception (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-MULTER-10773732] in multer@1.4.5-lts.1
+    introduced by multer@1.4.5-lts.1
+  ✗ Uncaught Exception [High Severity][https://security.snyk.io/vuln/SNYK-JS-MULTER-10185673] in multer@1.4.5-lts.1
+    introduced by multer@1.4.5-lts.1
+  ✗ Missing Release of Memory after Effective Lifetime [High Severity][https://security.snyk.io/vuln/SNYK-JS-MULTER-10185675] in multer@1.4.5-lts.1
+    introduced by multer@1.4.5-lts.1
+  ✗ Uncaught Exception [Critical Severity][https://security.snyk.io/vuln/SNYK-JS-MULTER-10299078] in multer@1.4.5-lts.1
+    introduced by multer@1.4.5-lts.1
+
+
+Issues with no direct upgrade or patch:
+  ✗ Predictable Value Range from Previous Values [Critical Severity][https://security.snyk.io/vuln/SNYK-JS-FORMDATA-10841150] in form-data@2.3.3
+    introduced by axios@1.8.4 > form-data@4.0.2 and 2 other path(s)
+  This issue was fixed in versions: 2.5.4, 3.0.4, 4.0.4
+  ✗ Server-side Request Forgery (SSRF) [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-REQUEST-3361831] in request@2.88.2
+    introduced by request@2.88.2
+  No upgrade or patch available
+  ✗ Prototype Pollution [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-TOUGHCOOKIE-5672873] in tough-cookie@2.5.0
+    introduced by request@2.88.2 > tough-cookie@2.5.0
+  This issue was fixed in versions: 4.1.3
+
+
+
+Organization:      justdes93
+Package manager:   npm
+Target file:       package-lock.json
+Project name:      layer
+Open source:       no
+Project path:      D:\ncP2P-2
+Licenses:          enabled
+
+Tip: Detected multiple supported manifests (1), use --all-projects to scan all of them at once.
+
+
